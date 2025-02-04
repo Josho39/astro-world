@@ -38,3 +38,55 @@ export enum TxType {
     batchTransferProgress?: BatchTransferRes;
     transferRange?: string;
   }
+
+  export interface MarketData {
+    priceInUsd: number;
+    volumeInUsd: number;
+}
+
+export interface MarketInfo {
+    name: string;
+    marketData?: MarketData;
+}
+
+export interface Token {
+    ticker: string;
+    marketsData?: MarketInfo[];
+}
+
+export interface MarketPrice {
+    market: string;
+    price: number;
+    volume: number;
+}
+
+export interface CombinedMarketData {
+    ticker: string;
+    markets: MarketPrice[];
+    maxPrice: number;
+    minPrice: number;
+    maxSpread: number;
+}
+
+export interface ArbOpportunity {
+    ticker: string;
+    market1: {
+        name: string;
+        price: number;
+        volume: number;
+        action: 'BUY' | 'SELL';
+    };
+    market2: {
+        name: string;
+        price: number;
+        volume: number;
+        action: 'BUY' | 'SELL';
+    };
+    arbPercentage: number;
+    profitPerToken: number;
+}
+
+export interface SortConfig {
+    key: string;
+    direction: 'asc' | 'desc';
+}

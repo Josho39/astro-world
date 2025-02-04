@@ -3,28 +3,10 @@
 import { useState, useEffect, SetStateAction } from 'react';
 import { useTheme } from 'next-themes';
 import { TokenTable } from '@/components/TokenTable';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  PieChart,
-  Treemap,
-  Pie,
-  Bar,
-  BarChart,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Legend,
-  CartesianGrid,
-} from 'recharts';
+import { PieChart, Pie, Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 import { Loader2, Search, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWallet } from '@/context/WalletContext';
@@ -228,57 +210,57 @@ export default function WalletProfiler() {
       value: token.balanceKas,
     }));
 
-    const handleMyWalletClick = () => {
-      if (walletInfo?.address) {
-        setSearchAddress(walletInfo.address);
-        setAddress(walletInfo.address);
-      }
-    };
-  
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder="Enter Kaspa Address"
-                value={searchAddress}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearchClick();
-                  }
-                }}
-                className="flex-1"
-              />
-              <div className="flex gap-2">
-                {walletConnected && walletInfo && (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleMyWalletClick}
-                    className="whitespace-nowrap"
-                  >
-                    <Wallet className="h-4 w-4 mr-2" />
-                    My Wallet
-                  </Button>
-                )}
+  const handleMyWalletClick = () => {
+    if (walletInfo?.address) {
+      setSearchAddress(walletInfo.address);
+      setAddress(walletInfo.address);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              placeholder="Enter Kaspa Address"
+              value={searchAddress}
+              onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchClick();
+                }
+              }}
+              className="flex-1"
+            />
+            <div className="flex gap-2">
+              {walletConnected && walletInfo && (
                 <Button
-                  onClick={handleSearchClick}
-                  disabled={!searchAddress || loading}
+                  variant="outline"
+                  onClick={handleMyWalletClick}
+                  className="whitespace-nowrap"
                 >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Search
-                    </>
-                  )}
+                  <Wallet className="h-4 w-4 mr-2" />
+                  My Wallet
                 </Button>
-              </div>
+              )}
+              <Button
+                onClick={handleSearchClick}
+                disabled={!searchAddress || loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </>
+                )}
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
       {loading && !tokenBalances.length ? (
         <Card>

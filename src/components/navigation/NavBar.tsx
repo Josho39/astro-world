@@ -18,7 +18,7 @@ export const navItems = [
     {
         name: 'Block Explorer',
         icon: <Search className="w-5 h-5" />,
-        href: '/block-explorer',
+        href: '/explorer',
     },
     {
         name: 'Charts',
