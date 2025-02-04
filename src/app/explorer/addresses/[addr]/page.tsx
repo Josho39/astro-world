@@ -79,20 +79,30 @@ export default function AddressPage() {
     const getTransactionAmount = (tx: Transaction): { amount: number; type: 'in' | 'out' } => {
         const addr = params.addr as string;
         let incomingAmount = 0;
-        let outgoingAmount = 0;
-
+        let isOutgoing = false;
+    
         tx.outputs.forEach(output => {
             if (output.script_public_key_address === addr) {
                 incomingAmount += output.amount;
             }
         });
-
+    
         const totalOutput = tx.outputs.reduce((sum, output) => sum + output.amount, 0);
-        if (incomingAmount < totalOutput) {
-            return { amount: -totalOutput / 100000000, type: 'out' };
+        const changeAmount = tx.outputs.reduce((sum, output) => 
+            output.script_public_key_address === addr ? sum + output.amount : sum, 0
+        );
+    
+        if (totalOutput > incomingAmount) {
+            return {
+                amount: -totalOutput / 100000000,
+                type: 'out'
+            };
         }
 
-        return { amount: incomingAmount / 100000000, type: 'in' };
+        return {
+            amount: incomingAmount / 100000000,
+            type: 'in'
+        };
     };
 
     const copyToClipboard = async () => {

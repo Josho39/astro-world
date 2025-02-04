@@ -34,7 +34,7 @@ interface AddressBalance {
   spending: number;
 }
 
-export async function getTransaction(hash: string, blockHash?: string): Promise<Transaction> {
+export async function getTransaction(hash: string, blockHash?: string, p0?: boolean): Promise<Transaction> {
   const queryParams = blockHash ? `?blockHash=${blockHash}` : '';
   const response = await fetch(`${API_BASE}/transactions/${hash}${queryParams}`, {
     headers: { 'Access-Control-Allow-Origin': '*' },
@@ -82,7 +82,15 @@ export async function getAddressTransactions(
     throw new Error(`Failed to fetch address transactions: ${response.statusText}`);
   }
 
-  return response.json();
+  const transactions = await response.json();
+
+  const fullTransactions = await Promise.all(
+    transactions.map((tx: { transaction_id: string; }) => 
+      getTransaction(tx.transaction_id, undefined, true)
+    )
+  );
+
+  return fullTransactions;
 }
 
 export async function getMarketData(): Promise<any> {
