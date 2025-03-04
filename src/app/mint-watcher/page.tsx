@@ -5,7 +5,7 @@ import MintWatcher from './mintwatcher';
 
 export default function MintWatcherPage() {
   return (
-    <div className="container mx-auto py-1 px-1 sm:px-1 lg:px-1">
+    <div className="w-full py-1">
       <MintWatcher />
     </div>
   );

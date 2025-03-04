@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -321,216 +321,199 @@ const MintWatcher = () => {
     };
 
     return (
-        <div className="space-y-6 pb-8">
-            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 rounded-xl border mb-8">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
-                        <p className="text-muted-foreground mt-1">Track real-time NFT mints across collections</p>
-                    </div>
-                    <Button 
-                        onClick={refreshData} 
-                        disabled={isRefreshing} 
-                        size="sm"
-                        className="bg-primary/90 hover:bg-primary"
-                    >
-                        {isRefreshing ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                        )}
-                        Refresh Data
-                    </Button>
-                </div>
-                
-                <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="text"
-                            placeholder={activeTab === 'recent-mints' ? "Search by ticker or ID..." : "Search collections..."}
-                            className="pl-8 bg-background/80 border-primary/20"
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                            <Switch
-                                id="watch-filter"
-                                checked={showOnlyWatched}
-                                onCheckedChange={setShowOnlyWatched}
-                            />
-                            <Label htmlFor="watch-filter">Watched only</Label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <Card className="w-full border">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-6">
-                    <TabsTrigger value="recent-mints" className="rounded-l-md">Recent Mints</TabsTrigger>
-                    <TabsTrigger value="collections" className="rounded-r-md">Collections</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="recent-mints" className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-medium flex items-center gap-2">
-                            {selectedCollection ? (
-                                <>
-                                    <Badge variant="secondary" className="py-1 px-3 text-sm">
-                                        {selectedCollection}
-                                    </Badge>
-                                    <span className="text-muted-foreground text-sm">Recent Mints</span>
-                                </>
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 rounded-t-xl">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
+                            <p className="text-muted-foreground mt-1">Track real-time NFT mints across collections</p>
+                        </div>
+                        <Button 
+                            onClick={refreshData} 
+                            disabled={isRefreshing} 
+                            size="sm"
+                            className="bg-primary/90 hover:bg-primary"
+                        >
+                            {isRefreshing ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             ) : (
-                                "All Recent Mints"
+                                <RefreshCw className="h-4 w-4 mr-2" />
                             )}
-                        </h3>
-                        {selectedCollection && (
-                            <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
-                                View All Collections
-                            </Button>
-                        )}
+                            Refresh Data
+                        </Button>
                     </div>
                     
-                    {isLoading ? (
-                        <div className="text-center py-12 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
-                            <Loader2 className="h-8 w-8 animate-spin mb-4" />
-                            <p>Loading recent mints...</p>
+                    <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                placeholder={activeTab === 'recent-mints' ? "Search by ticker or ID..." : "Search collections..."}
+                                className="pl-8 bg-background/80 border-primary/20"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                            />
                         </div>
-                    ) : filteredMints.length === 0 ? (
-                        <div className="text-center py-16 text-muted-foreground bg-card border rounded-xl">
-                            <Info className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                            <p className="text-lg font-medium">No recent mints found</p>
-                            <p className="text-sm mt-1 max-w-md mx-auto">Try refreshing or check back later for updates on new mints.</p>
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="watch-filter"
+                                    checked={showOnlyWatched}
+                                    onCheckedChange={setShowOnlyWatched}
+                                />
+                                <Label htmlFor="watch-filter">Watched only</Label>
+                            </div>
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {filteredMints.map((mint, index) => {
-                                const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
-                                return (
-                                    <div 
-                                        key={`${mint.tick}-${mint.id}-${index}`}
-                                        className="relative perspective-1000 cursor-pointer h-56 md:h-64"
-                                        onClick={() => toggleCardFlip(mint.tick, mint.id)}
-                                    >
-                                        <div 
-                                            className={cn(
-                                                "w-full h-full transition-transform duration-500 preserve-3d relative",
-                                                isFlipped ? "rotate-y-180" : ""
-                                            )}
-                                        >
-                                            {/* Front of card */}
+                    </div>
+                    
+                    <div className="mt-6">
+                        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
+                            <TabsTrigger value="recent-mints" className="rounded-l-md">Recent Mints</TabsTrigger>
+                            <TabsTrigger value="collections" className="rounded-r-md">Collections</TabsTrigger>
+                        </TabsList>
+                    </div>
+                </div>
+
+                <div className="p-6">
+                    <TabsContent value="recent-mints" className="mt-0 space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-medium flex items-center gap-2">
+                                {selectedCollection ? (
+                                    <>
+                                        <Badge variant="secondary" className="py-1 px-3 text-sm">
+                                            {selectedCollection}
+                                        </Badge>
+                                        <span className="text-muted-foreground text-sm">Recent Mints</span>
+                                    </>
+                                ) : (
+                                    "All Recent Mints"
+                                )}
+                            </h3>
+                            {selectedCollection && (
+                                <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
+                                    View All Collections
+                                </Button>
+                            )}
+                        </div>
+                        
+                        {isLoading ? (
+                            <div className="text-center py-12 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
+                                <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                                <p>Loading recent mints...</p>
+                            </div>
+                        ) : filteredMints.length === 0 ? (
+                            <div className="text-center py-16 text-muted-foreground bg-card border rounded-xl">
+                                <Info className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p className="text-lg font-medium">No recent mints found</p>
+                                <p className="text-sm mt-1 max-w-md mx-auto">Try refreshing or check back later for updates on new mints.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                {filteredMints.map((mint, index) => {
+                                    const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
+                                    return (
+                                        <div key={`${mint.tick}-${mint.id}-${index}`} className="group perspective-1000 h-[320px]">
                                             <div 
-                                                className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden border bg-card"
+                                                className={cn(
+                                                    "relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",
+                                                    isFlipped ? "rotate-y-180" : ""
+                                                )}
+                                                onClick={() => toggleCardFlip(mint.tick, mint.id)}
                                             >
-                                                <div className="relative w-full aspect-square bg-muted">
-                                                    {mint.thumbnail_url ? (
-                                                        <img 
-                                                            src={mint.thumbnail_url} 
-                                                            alt={`${mint.tick} #${mint.id}`} 
-                                                            className="w-full h-full object-cover"
-                                                            onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = "/placeholder-nft.png";
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                                                            <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
-                                                        </div>
-                                                    )}
-                                                    <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-foreground">
-                                                        #{mint.id}
-                                                    </Badge>
-                                                </div>
-                                                <div className="p-2 flex justify-between items-center">
-                                                    <div className="font-medium truncate">
-                                                        {mint.tick}
-                                                    </div>
-                                                    <div className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary whitespace-nowrap">
-                                                        {formatTimeAgo(mint.timestamp)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Back of card */}
-                                            <div 
-                                                className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border bg-card p-3"
-                                            >
-                                                <div className="h-full flex flex-col">
-                                                    <h3 className="text-sm font-bold truncate">
-                                                        {mint.metadata?.name || `${mint.tick} #${mint.id}`}
-                                                    </h3>
-                                                    
-                                                    <div className="mt-1 flex-1 overflow-y-auto text-xs">
-                                                        {!mint.metadata ? (
-                                                            <div className="h-full flex items-center justify-center">
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            </div>
+                                                <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden border bg-card">
+                                                    <div className="relative w-[full] h-[full] bg-muted">
+                                                        {mint.thumbnail_url ? (
+                                                            <img 
+                                                                src={mint.thumbnail_url} 
+                                                                alt={`${mint.tick} #${mint.id}`} 
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = "/placeholder-nft.png";
+                                                                }}
+                                                            />
                                                         ) : (
-                                                            <div className="space-y-2">
-                                                                {mint.metadata.description && (
-                                                                    <p className="text-muted-foreground line-clamp-3">{mint.metadata.description}</p>
-                                                                )}
-                                                                
-                                                                {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
-                                                                    <div className="space-y-1 pt-1">
-                                                                        <p className="font-semibold text-xs">Attributes:</p>
-                                                                        <div className="grid grid-cols-2 gap-1">
-                                                                            {mint.metadata.attributes.slice(0, 6).map((attr, idx) => (
-                                                                                <div 
-                                                                                    key={idx} 
-                                                                                    className="bg-primary/5 p-1 rounded truncate"
-                                                                                >
-                                                                                    <span className="font-medium text-primary/70 text-[10px]">{attr.trait_type}: </span>
-                                                                                    <span className="text-[10px]">{attr.value}</span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                        {mint.metadata.attributes.length > 6 && (
-                                                                            <p className="text-[10px] text-muted-foreground text-center">
-                                                                                +{mint.metadata.attributes.length - 6} more
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                )}
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
                                                             </div>
                                                         )}
+                                                        <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-foreground">
+                                                            #{mint.id}
+                                                        </Badge>
                                                     </div>
-                                                    
-                                                    <div className="mt-2 flex justify-between items-center pt-2 border-t">
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Tap to flip
-                                                        </span>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className={cn(
-                                                                "h-6 w-6",
-                                                                watchedCollections.has(mint.tick) ? "text-primary" : "text-muted-foreground"
+                                                    <div className="h-[40px] p-2 flex justify-between items-center">
+                                                        <div className="font-medium truncate">
+                                                            {mint.tick}
+                                                        </div>
+                                                        <div className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary whitespace-nowrap">
+                                                            {formatTimeAgo(mint.timestamp)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border bg-card p-3">
+                                                    <div className="h-full flex flex-col">
+                                                        <h3 className="text-sm font-bold truncate">
+                                                            {mint.metadata?.name || `${mint.tick} #${mint.id}`}
+                                                        </h3>
+                                                        
+                                                        <div className="mt-1 flex-1 overflow-y-auto text-xs">
+                                                            {!mint.metadata ? (
+                                                                <div className="h-full flex items-center justify-center">
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                </div>
+                                                            ) : (
+                                                                <div>
+                                                                    {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
+                                                                        <div className="space-y-1 pt-1">
+                                                                            <div className="grid grid-cols-2 gap-1">
+                                                                                {mint.metadata.attributes.slice(0, 100).map((attr, idx) => (
+                                                                                    <div 
+                                                                                        key={idx} 
+                                                                                        className="bg-primary/5 p-1 rounded truncate"
+                                                                                    >
+                                                                                        <span className="font-medium text-primary/70 text-[10px]">{attr.trait_type}: </span>
+                                                                                        <span className="text-[10px]">{attr.value}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             )}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                toggleWatch(mint.tick);
-                                                            }}
-                                                        >
-                                                            {watchedCollections.has(mint.tick) ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-                                                        </Button>
+                                                        </div>
+                                                        
+                                                        <div className="mt-2 flex justify-between items-center pt-2 border-t">
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Tap to flip
+                                                            </span>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className={cn(
+                                                                    "h-6 w-6",
+                                                                    watchedCollections.has(mint.tick) ? "text-primary" : "text-muted-foreground"
+                                                                )}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    toggleWatch(mint.tick);
+                                                                }}
+                                                            >
+                                                                {watchedCollections.has(mint.tick) ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </TabsContent>
-                
-                <TabsContent value="collections">
-                    <Card className="overflow-hidden">
-                        <CardContent className="p-0">
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </TabsContent>
+                    
+                    <TabsContent value="collections" className="mt-0">
+                        <div className="border rounded-md overflow-hidden">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -625,9 +608,9 @@ const MintWatcher = () => {
                                     )}
                                 </TableBody>
                             </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
+                    </TabsContent>
+                </div>
             </Tabs>
 
             <AlertDialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
@@ -664,22 +647,7 @@ const MintWatcher = () => {
                     </Button>
                 </div>
             )}
-
-            <style jsx global>{`
-                .perspective-1000 {
-                    perspective: 1000px;
-                }
-                .backface-hidden {
-                    backface-visibility: hidden;
-                }
-                .preserve-3d {
-                    transform-style: preserve-3d;
-                }
-                .rotate-y-180 {
-                    transform: rotateY(180deg);
-                }
-            `}</style>
-        </div>
+        </Card>
     );
 };
 
