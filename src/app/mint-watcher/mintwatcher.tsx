@@ -9,8 +9,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Bell, BellOff, RefreshCw, Search, Loader2, AlertCircle, Info, X, ExternalLink } from 'lucide-react';
+import { Bell, BellOff, RefreshCw, Search, Loader2, AlertCircle, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import _ from 'lodash';
 
@@ -30,6 +31,14 @@ interface NFTMint {
     thumbnail_url?: string;
     current_mint_position?: number;
     total_supply?: number;
+    metadata?: NFTMetadata;
+}
+
+interface NFTMetadata {
+    name?: string;
+    description?: string;
+    image?: string;
+    attributes?: { trait_type: string; value: string }[];
 }
 
 const MintWatcher = () => {
@@ -45,6 +54,7 @@ const MintWatcher = () => {
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [activeTab, setActiveTab] = useState('recent-mints');
     const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+    const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const savedWatches = localStorage.getItem('nftWatchedCollections');
@@ -90,10 +100,10 @@ const MintWatcher = () => {
         try {
             setIsLoading(true);
             setError(null);
-
+            
             await fetchCollectionDetails();
             await fetchRecentMints();
-
+            
         } catch (error) {
             console.error('Error fetching data:', error);
             setError('Failed to load data. Please try again later.');
@@ -111,10 +121,10 @@ const MintWatcher = () => {
             }
 
             const data = await response.json();
-
+            
             if (data.success && data.data) {
                 const collectionDocs = data.data;
-
+                
                 const collectionsMap = new Map<string, NFTCollection>();
 
                 collectionDocs.forEach((doc: { tick: any; minted_count: any; total_supply: any; last_updated: any; }) => {
@@ -131,7 +141,7 @@ const MintWatcher = () => {
 
                 setCollections(Array.from(collectionsMap.values()));
             }
-
+            
             return true;
         } catch (error) {
             console.error('Error fetching collection details:', error);
@@ -148,7 +158,7 @@ const MintWatcher = () => {
             }
 
             const data = await response.json();
-
+            
             if (data.success && data.data) {
                 const fetchedMints = data.data.map((mint: any) => ({
                     tick: mint.tick,
@@ -158,21 +168,60 @@ const MintWatcher = () => {
                     current_mint_position: mint.current_mint_position,
                     total_supply: mint.total_supply
                 }));
-
+                
                 setRecentMints(fetchedMints);
-
+                
                 fetchedMints.forEach((mint: { tick: string; id: number; }) => {
                     if (watchedCollections.has(mint.tick)) {
                         showNotification(mint.tick, mint.id);
                     }
                 });
             }
-
+            
             return true;
         } catch (error) {
             console.error('Error fetching recent mints:', error);
             return false;
         }
+    };
+
+    const fetchMetadata = async (tick: string, id: number) => {
+        try {
+            const url = `https://cache.krc721.stream/krc721/mainnet/metadata/${tick}/${id}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+            }
+            
+            const metadata = await response.json();
+            
+            setRecentMints(prevMints => 
+                prevMints.map(mint => 
+                    mint.tick === tick && mint.id === id 
+                        ? { ...mint, metadata } 
+                        : mint
+                )
+            );
+        } catch (error) {
+            console.error(`Error fetching metadata for ${tick}/${id}:`, error);
+        }
+    };
+
+    const toggleCardFlip = (tick: string, id: number) => {
+        const cardId = `${tick}-${id}`;
+        setFlippedCards(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(cardId)) {
+                newSet.delete(cardId);
+            } else {
+                newSet.add(cardId);
+                if (!recentMints.find(m => m.tick === tick && m.id === id)?.metadata) {
+                    fetchMetadata(tick, id);
+                }
+            }
+            return newSet;
+        });
     };
 
     const refreshData = async () => {
@@ -240,6 +289,12 @@ const MintWatcher = () => {
         });
 
     const filteredMints = recentMints.filter(mint => {
+        if (activeTab === 'recent-mints' && searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            const matchesTick = mint.tick.toLowerCase().includes(lowerQuery);
+            const matchesId = mint.id.toString().includes(lowerQuery);
+            if (!matchesTick && !matchesId) return false;
+        }
         if (selectedCollection && mint.tick !== selectedCollection) return false;
         return true;
     });
@@ -273,9 +328,9 @@ const MintWatcher = () => {
                         <h1 className="text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
                         <p className="text-muted-foreground mt-1">Track real-time NFT mints across collections</p>
                     </div>
-                    <Button
-                        onClick={refreshData}
-                        disabled={isRefreshing}
+                    <Button 
+                        onClick={refreshData} 
+                        disabled={isRefreshing} 
                         size="sm"
                         className="bg-primary/90 hover:bg-primary"
                     >
@@ -287,13 +342,13 @@ const MintWatcher = () => {
                         Refresh Data
                     </Button>
                 </div>
-
+                
                 <div className="mt-6 flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="text"
-                            placeholder="Search collections..."
+                            placeholder={activeTab === 'recent-mints' ? "Search by ticker or ID..." : "Search collections..."}
                             className="pl-8 bg-background/80 border-primary/20"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
@@ -317,7 +372,7 @@ const MintWatcher = () => {
                     <TabsTrigger value="recent-mints" className="rounded-l-md">Recent Mints</TabsTrigger>
                     <TabsTrigger value="collections" className="rounded-r-md">Collections</TabsTrigger>
                 </TabsList>
-
+                
                 <TabsContent value="recent-mints" className="space-y-6">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-medium flex items-center gap-2">
@@ -338,7 +393,7 @@ const MintWatcher = () => {
                             </Button>
                         )}
                     </div>
-
+                    
                     {isLoading ? (
                         <div className="text-center py-12 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
                             <Loader2 className="h-8 w-8 animate-spin mb-4" />
@@ -351,61 +406,128 @@ const MintWatcher = () => {
                             <p className="text-sm mt-1 max-w-md mx-auto">Try refreshing or check back later for updates on new mints.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredMints.map((mint, index) => (
-                                <Card
-                                    key={`${mint.tick}-${mint.id}-${index}`}
-                                    className="overflow-hidden transition-all hover:shadow-md"
-                                >
-                                    <div className="aspect-square relative bg-muted">
-                                        {mint.thumbnail_url ? (
-                                            <img
-                                                src={mint.thumbnail_url}
-                                                alt={`${mint.tick} #${mint.id}`}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = "/placeholder-nft.png";
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                                                <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
-                                            </div>
-                                        )}
-                                        <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-foreground">
-                                            #{mint.id}
-                                        </Badge>
-                                    </div>
-                                    <CardContent className="p-4">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-semibold text-lg tracking-tight">{mint.tick}</h3>
-                                            </div>
-                                            <div className="text-xs font-medium px-2 py-1 rounded bg-primary/10 text-primary">
-                                                {formatTimeAgo(mint.timestamp)}
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 pt-3 border-t flex justify-between items-center">
-
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className={cn(
-                                                    "h-8 w-8",
-                                                    watchedCollections.has(mint.tick) ? "text-primary" : "text-muted-foreground"
-                                                )}
-                                                onClick={() => toggleWatch(mint.tick)}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {filteredMints.map((mint, index) => {
+                                const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
+                                return (
+                                    <div 
+                                        key={`${mint.tick}-${mint.id}-${index}`}
+                                        className="relative perspective-1000 cursor-pointer h-56 md:h-64"
+                                        onClick={() => toggleCardFlip(mint.tick, mint.id)}
+                                    >
+                                        <div 
+                                            className={cn(
+                                                "w-full h-full transition-transform duration-500 preserve-3d relative",
+                                                isFlipped ? "rotate-y-180" : ""
+                                            )}
+                                        >
+                                            {/* Front of card */}
+                                            <div 
+                                                className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden border bg-card"
                                             >
-                                                {watchedCollections.has(mint.tick) ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-                                            </Button>
+                                                <div className="relative w-full aspect-square bg-muted">
+                                                    {mint.thumbnail_url ? (
+                                                        <img 
+                                                            src={mint.thumbnail_url} 
+                                                            alt={`${mint.tick} #${mint.id}`} 
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = "/placeholder-nft.png";
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                                                            <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
+                                                        </div>
+                                                    )}
+                                                    <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-foreground">
+                                                        #{mint.id}
+                                                    </Badge>
+                                                </div>
+                                                <div className="p-2 flex justify-between items-center">
+                                                    <div className="font-medium truncate">
+                                                        {mint.tick}
+                                                    </div>
+                                                    <div className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary whitespace-nowrap">
+                                                        {formatTimeAgo(mint.timestamp)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Back of card */}
+                                            <div 
+                                                className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border bg-card p-3"
+                                            >
+                                                <div className="h-full flex flex-col">
+                                                    <h3 className="text-sm font-bold truncate">
+                                                        {mint.metadata?.name || `${mint.tick} #${mint.id}`}
+                                                    </h3>
+                                                    
+                                                    <div className="mt-1 flex-1 overflow-y-auto text-xs">
+                                                        {!mint.metadata ? (
+                                                            <div className="h-full flex items-center justify-center">
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {mint.metadata.description && (
+                                                                    <p className="text-muted-foreground line-clamp-3">{mint.metadata.description}</p>
+                                                                )}
+                                                                
+                                                                {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
+                                                                    <div className="space-y-1 pt-1">
+                                                                        <p className="font-semibold text-xs">Attributes:</p>
+                                                                        <div className="grid grid-cols-2 gap-1">
+                                                                            {mint.metadata.attributes.slice(0, 6).map((attr, idx) => (
+                                                                                <div 
+                                                                                    key={idx} 
+                                                                                    className="bg-primary/5 p-1 rounded truncate"
+                                                                                >
+                                                                                    <span className="font-medium text-primary/70 text-[10px]">{attr.trait_type}: </span>
+                                                                                    <span className="text-[10px]">{attr.value}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        {mint.metadata.attributes.length > 6 && (
+                                                                            <p className="text-[10px] text-muted-foreground text-center">
+                                                                                +{mint.metadata.attributes.length - 6} more
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="mt-2 flex justify-between items-center pt-2 border-t">
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Tap to flip
+                                                        </span>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className={cn(
+                                                                "h-6 w-6",
+                                                                watchedCollections.has(mint.tick) ? "text-primary" : "text-muted-foreground"
+                                                            )}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleWatch(mint.tick);
+                                                            }}
+                                                        >
+                                                            {watchedCollections.has(mint.tick) ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </TabsContent>
-
+                
                 <TabsContent value="collections">
                     <Card className="overflow-hidden">
                         <CardContent className="p-0">
@@ -472,19 +594,25 @@ const MintWatcher = () => {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     {collection.total_supply ? (
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-primary rounded-full"
-                                                                    style={{
-                                                                        width: `${(collection.minted_count / collection.total_supply) * 100}%`
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-xs">
-                                                                {Math.round((collection.minted_count / collection.total_supply) * 100)}%
-                                                            </span>
-                                                        </div>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <div className="flex items-center justify-end">
+                                                                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                                                            <div 
+                                                                                className="h-full bg-primary rounded-full" 
+                                                                                style={{ 
+                                                                                    width: `${(collection.minted_count / collection.total_supply) * 100}%` 
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>{Math.round((collection.minted_count / collection.total_supply) * 100)}% minted</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                     ) : (
                                                         <span className="text-xs text-muted-foreground">-</span>
                                                     )}
@@ -536,6 +664,21 @@ const MintWatcher = () => {
                     </Button>
                 </div>
             )}
+
+            <style jsx global>{`
+                .perspective-1000 {
+                    perspective: 1000px;
+                }
+                .backface-hidden {
+                    backface-visibility: hidden;
+                }
+                .preserve-3d {
+                    transform-style: preserve-3d;
+                }
+                .rotate-y-180 {
+                    transform: rotateY(180deg);
+                }
+            `}</style>
         </div>
     );
 };
