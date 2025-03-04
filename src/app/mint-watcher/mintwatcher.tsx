@@ -487,20 +487,7 @@ const MintWatcher = () => {
                                                             <span className="text-xs text-muted-foreground">
                                                                 Tap to flip
                                                             </span>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className={cn(
-                                                                    "h-6 w-6",
-                                                                    watchedCollections.has(mint.tick) ? "text-primary" : "text-muted-foreground"
-                                                                )}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    toggleWatch(mint.tick);
-                                                                }}
-                                                            >
-                                                                {watchedCollections.has(mint.tick) ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-                                                            </Button>
+                                                         
                                                         </div>
                                                     </div>
                                                 </div>
