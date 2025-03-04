@@ -413,7 +413,7 @@ const MintWatcher = () => {
                                 {filteredMints.map((mint, index) => {
                                     const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
                                     return (
-                                        <div key={`${mint.tick}-${mint.id}-${index}`} className="group perspective-1000 h-[320px]">
+                                        <div key={`${mint.tick}-${mint.id}-${index}`} className="group perspective-1000 h-[290px]">
                                             <div 
                                                 className={cn(
                                                     "relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",
@@ -422,12 +422,12 @@ const MintWatcher = () => {
                                                 onClick={() => toggleCardFlip(mint.tick, mint.id)}
                                             >
                                                 <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden border bg-card">
-                                                    <div className="relative w-[full] h-[full] bg-muted">
+                                                    <div className="relative w-full h-[250px] bg-muted">
                                                         {mint.thumbnail_url ? (
                                                             <img 
                                                                 src={mint.thumbnail_url} 
                                                                 alt={`${mint.tick} #${mint.id}`} 
-                                                                className="w-full h-full object-cover"
+                                                                className="w-full h-full"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src = "/placeholder-nft.png";
                                                                 }}
@@ -437,11 +437,11 @@ const MintWatcher = () => {
                                                                 <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
                                                             </div>
                                                         )}
-                                                        <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-foreground">
+                                                        <Badge className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm text-foreground">
                                                             #{mint.id}
                                                         </Badge>
                                                     </div>
-                                                    <div className="h-[40px] p-2 flex justify-between items-center">
+                                                    <div className="h-[40px] p-1 flex justify-between items-center">
                                                         <div className="font-medium truncate">
                                                             {mint.tick}
                                                         </div>
