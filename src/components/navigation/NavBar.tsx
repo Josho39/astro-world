@@ -16,11 +16,6 @@ export const navItems = [
         href: '/krc20-tokens',
     },
     {
-        name: 'Block Explorer',
-        icon: <Search className="w-5 h-5" />,
-        href: '/explorer',
-    },
-    {
         name: 'Charts',
         icon: <LineChart className="w-5 h-5" />,
         href: '/charts',
@@ -46,9 +41,9 @@ export const navItems = [
         href: '/airdrop-tool',
     },
     {
-        name: 'Wallet Watcher',
+        name: 'Wallet Explorer',
         icon: <Eye className="w-5 h-5" />,
-        href: '/wallet-watcher',
+        href: '/wallet-explorer',
     },
     {
         name: 'Mint Watcher',
