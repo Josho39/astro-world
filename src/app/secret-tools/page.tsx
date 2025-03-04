@@ -5,7 +5,7 @@ export default function ChartsPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4">
       <div className="text-center space-y-4">
         <h1 className="text-4xl md:text-6xl font-bold text-white">
-          Coming Soon
+          Coming Soon shhh
         </h1>
         <p className="text-lg md:text-xl text-white/80">
           We're working hard to bring you amazing data visualizations!
