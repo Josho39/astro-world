@@ -5,7 +5,7 @@ export async function GET(
   { params }: { params: { tick: string } }
 ) {
   try {
-    const tick = params.tick;
+    const { tick } = await Promise.resolve(params);
 
     if (!tick) {
       return NextResponse.json(
@@ -15,7 +15,7 @@ export async function GET(
     }
 
     const response = await fetch(`https://api.kaspa.com/krc721/${tick}`);
-    
+
     if (!response.ok) {
       return NextResponse.json(
         { error: `Failed to fetch data for ${tick}` },

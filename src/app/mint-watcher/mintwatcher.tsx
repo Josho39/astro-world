@@ -64,21 +64,21 @@ const HolderDistributionChart = ({ holders }: { holders: NFTHolder[] }) => {
         { name: '11-25', min: 11, max: 25 },
         { name: '25+', min: 26, max: Infinity }
     ];
-    
+
     const distribution = ranges.map(range => {
-        const count = holders.filter(holder => 
+        const count = holders.filter(holder =>
             holder.count >= range.min && holder.count <= range.max
         ).length;
-        
+
         return {
             name: range.name,
             count,
             color: getBarColor(range.name)
         };
     });
-    
+
     function getBarColor(name: string) {
-        switch(name) {
+        switch (name) {
             case '1': return '#8884d8';
             case '2-5': return '#82ca9d';
             case '6-10': return '#ffc658';
@@ -87,7 +87,7 @@ const HolderDistributionChart = ({ holders }: { holders: NFTHolder[] }) => {
             default: return '#8884d8';
         }
     }
-    
+
     return (
         <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -267,11 +267,11 @@ const MintWatcher = () => {
             setIsHolderLoading(true);
             setError(null);
             const response = await fetch(`/api/krc721/holders/${tick}`);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to fetch holder data for ${tick}`);
             }
-            
+
             const data = await response.json();
             setHolderData(data);
         } catch (error) {
@@ -282,6 +282,7 @@ const MintWatcher = () => {
             setIsHolderLoading(false);
         }
     };
+    
     const fetchMetadata = async (tick: string, id: number) => {
         try {
             const url = `https://cache.krc721.stream/krc721/mainnet/metadata/${tick}/${id}`;
@@ -418,12 +419,12 @@ const MintWatcher = () => {
     const handleCollectionClick = (tick: string) => {
         const newSelected = selectedCollection === tick ? null : tick;
         setSelectedCollection(newSelected);
-        
+
         if (newSelected && activeTab === 'holders') {
             fetchHolderData(newSelected);
         }
     };
-    
+
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
         if (tab === 'holders' && selectedCollection) {
@@ -722,7 +723,7 @@ const MintWatcher = () => {
                             </Table>
                         </div>
                     </TabsContent>
-                    
+
                     <TabsContent value="holders" className="mt-0 space-y-4">
                         {selectedCollection && holderData ? (
                             <div className="space-y-6">
@@ -750,7 +751,7 @@ const MintWatcher = () => {
                                             <div className="col-span-2 md:col-span-3">
                                                 <p className="text-sm text-muted-foreground">Minting Progress</p>
                                                 <div className="mt-2 h-3 bg-muted rounded-full overflow-hidden">
-                                                    <div 
+                                                    <div
                                                         className="h-full bg-primary rounded-full"
                                                         style={{ width: `${holderData.totalMintedPercent * 100}%` }}
                                                     ></div>
@@ -759,7 +760,7 @@ const MintWatcher = () => {
                                             </div>
                                         </div>
                                     </Card>
-                                    
+
                                     <Card className="flex-1 p-5">
                                         <h3 className="text-lg font-bold mb-4">Holder Distribution</h3>
                                         <div className="h-[200px] w-full">
@@ -767,7 +768,7 @@ const MintWatcher = () => {
                                         </div>
                                     </Card>
                                 </div>
-                                
+
                                 <Card className="overflow-hidden">
                                     <div className="p-5 border-b">
                                         <h3 className="text-lg font-semibold">All Holders</h3>
@@ -817,7 +818,7 @@ const MintWatcher = () => {
                                     <h3 className="text-lg font-medium">Select a Collection to View Holders</h3>
                                     <p className="text-sm text-muted-foreground mt-1">Choose from the collections below to see holder distribution and details</p>
                                 </div>
-                                
+
                                 <div className="border rounded-md overflow-hidden">
                                     <Table>
                                         <TableHeader>
