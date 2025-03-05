@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  context: any // Using 'any' temporarily to bypass type checking
+  context: any 
 ) {
   try {
     const { tick } = context.params;
