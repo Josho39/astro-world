@@ -5,13 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Bell, BellOff, RefreshCw, Search, Loader2, AlertCircle, Info, X } from 'lucide-react';
+import { Bell, RefreshCw, Search, Loader2, AlertCircle, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import _ from 'lodash';
@@ -92,12 +90,7 @@ const HolderDistributionChart = ({ holders }: { holders: NFTHolder[] }) => {
         <ResponsiveContainer width="100%" height="100%">
             <BarChart
                 data={distribution}
-                margin={{
-                    top: 5,
-                    right: 5,
-                    left: 0,
-                    bottom: 5,
-                }}
+                margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
             >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
@@ -125,7 +118,6 @@ const MintWatcher = () => {
     const [isHolderLoading, setIsHolderLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showOnlyWatched, setShowOnlyWatched] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -177,10 +169,8 @@ const MintWatcher = () => {
         try {
             setIsLoading(true);
             setError(null);
-
             await fetchCollectionDetails();
             await fetchRecentMints();
-
         } catch (error) {
             console.error('Error fetching data:', error);
             setError('Failed to load data. Please try again later.');
@@ -201,7 +191,6 @@ const MintWatcher = () => {
 
             if (data.success && data.data) {
                 const collectionDocs = data.data;
-
                 const collectionsMap = new Map<string, NFTCollection>();
 
                 collectionDocs.forEach((doc: { tick: any; minted_count: any; total_supply: any; last_updated: any; }) => {
@@ -383,7 +372,6 @@ const MintWatcher = () => {
 
     const filteredCollections = collections
         .filter(collection => {
-            if (showOnlyWatched && !collection.watched) return false;
             if (searchQuery && !collection.tick.toLowerCase().includes(searchQuery.toLowerCase())) return false;
             return true;
         })
@@ -439,12 +427,12 @@ const MintWatcher = () => {
 
     return (
         <Card className="w-full border">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 rounded-t-xl">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 md:p-6 rounded-t-xl">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
-                            <p className="text-muted-foreground mt-1">Track real-time NFT mints across collections</p>
+                            <h1 className="text-xl md:text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
+                            <p className="text-sm text-muted-foreground mt-1">Track real-time NFT mints across collections</p>
                         </div>
                         <Button
                             onClick={refreshData}
@@ -457,69 +445,55 @@ const MintWatcher = () => {
                             ) : (
                                 <RefreshCw className="h-4 w-4 mr-2" />
                             )}
-                            Refresh Data
+                            Refresh
                         </Button>
                     </div>
 
-                    <div className="mt-1 flex flex-col sm:flex-row gap-2">
-                        <div className="flex-1 relative">
+                    <div className="mt-3 flex justify-between items-center">
+                        <div className="relative w-64">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
-                                placeholder={activeTab === 'recent-mints' ? "Search by ticker or ID..." : "Search collections..."}
-                                className="pl-8 bg-background/80 border-primary/20"
+                                placeholder="Search..."
+                                className="pl-8 h-9 bg-background/80 border-primary/20"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="watch-filter"
-                                    checked={showOnlyWatched}
-                                    onCheckedChange={setShowOnlyWatched}
-                                />
-                                <Label htmlFor="watch-filter">Watched only</Label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-2">
-                        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
+                        <TabsList className="grid grid-cols-2 w-48">
                             <TabsTrigger value="recent-mints" className="rounded-l-md">Recent Mints</TabsTrigger>
-                            <TabsTrigger value="collections">Collections</TabsTrigger>
-                            <TabsTrigger value="holders" className="rounded-r-md" onClick={() => handleTabChange('holders')}>Holders</TabsTrigger>
+                            <TabsTrigger value="holders" className="rounded-r-md">Holders</TabsTrigger>
                         </TabsList>
                     </div>
                 </div>
 
                 <div className="p-2">
                     <TabsContent value="recent-mints" className="mt-0 space-y-2">
-                        <div className="flex justify-between items-center">
-                            {selectedCollection && (
+                        {selectedCollection && (
+                            <div className="flex justify-between items-center mb-2">
                                 <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
                                     View All Collections
                                 </Button>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
                         {isLoading ? (
-                            <div className="text-center py-12 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
+                            <div className="text-center py-8 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
                                 <Loader2 className="h-8 w-8 animate-spin mb-4" />
                                 <p>Loading recent mints...</p>
                             </div>
                         ) : filteredMints.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground bg-card border rounded-xl">
+                            <div className="text-center py-6 text-muted-foreground bg-card border rounded-xl">
                                 <Info className="h-12 w-12 mx-auto mb-1 opacity-50" />
                                 <p className="text-lg font-medium">No recent mints found</p>
                                 <p className="text-sm mt-1 max-w-md mx-auto">Try refreshing or check back later for updates on new mints.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                                 {filteredMints.map((mint, index) => {
                                     const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
                                     return (
-                                        <div key={`${mint.tick}-${mint.id}-${index}`} className="group perspective-1000 h-[290px]">
+                                        <div key={`${mint.tick}-${mint.id}-${index}`} className="group perspective-1000 h-72">
                                             <div
                                                 className={cn(
                                                     "relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",
@@ -528,12 +502,12 @@ const MintWatcher = () => {
                                                 onClick={() => toggleCardFlip(mint.tick, mint.id)}
                                             >
                                                 <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden border bg-card">
-                                                    <div className="relative w-full h-[250px] bg-muted">
+                                                    <div className="relative aspect-square w-full bg-muted">
                                                         {mint.thumbnail_url ? (
                                                             <img
                                                                 src={mint.thumbnail_url}
                                                                 alt={`${mint.tick} #${mint.id}`}
-                                                                className="w-full h-full"
+                                                                className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src = "/placeholder-nft.png";
                                                                 }}
@@ -547,7 +521,7 @@ const MintWatcher = () => {
                                                             #{mint.id}
                                                         </Badge>
                                                     </div>
-                                                    <div className="h-[40px] p-1 flex justify-between items-center">
+                                                    <div className="h-12 p-2 flex justify-between items-center">
                                                         <div className="font-medium truncate">
                                                             {mint.tick}
                                                         </div>
@@ -593,7 +567,6 @@ const MintWatcher = () => {
                                                             <span className="text-xs text-muted-foreground">
                                                                 Tap to flip
                                                             </span>
-
                                                         </div>
                                                     </div>
                                                 </div>
@@ -605,152 +578,33 @@ const MintWatcher = () => {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="collections" className="mt-0">
-                        <div className="border rounded-md overflow-hidden">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-12"></TableHead>
-                                        <TableHead>Collection</TableHead>
-                                        <TableHead className="text-right">Minted</TableHead>
-                                        <TableHead className="text-right">Total Supply</TableHead>
-                                        <TableHead className="text-right">Progress</TableHead>
-                                        <TableHead className="text-right">Last Updated</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="h-24 text-center">
-                                                <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                                                <span className="block mt-1 text-sm text-muted-foreground">Loading collections...</span>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : filteredCollections.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="h-24 text-center">
-                                                <span className="text-muted-foreground">
-                                                    {searchQuery ? 'No matching collections found' : 'No collections found'}
-                                                </span>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        filteredCollections.map(collection => {
-                                            const mintPercentage = collection.total_supply
-                                                ? Math.round((collection.minted_count / collection.total_supply) * 100)
-                                                : 0;
-                                            const progressBarColor = getProgressBarColor(mintPercentage);
-
-                                            return (
-                                                <TableRow
-                                                    key={collection.tick}
-                                                    className={cn(
-                                                        collection.watched ? 'bg-primary/5' : '',
-                                                        selectedCollection === collection.tick ? 'bg-secondary/30' : '',
-                                                        "cursor-pointer hover:bg-secondary/10"
-                                                    )}
-                                                    onClick={() => handleCollectionClick(collection.tick)}
-                                                >
-                                                    <TableCell className="p-2 text-center">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                toggleWatch(collection.tick);
-                                                            }}
-                                                            className={cn(
-                                                                "h-8 w-8",
-                                                                collection.watched ? "text-primary" : "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {collection.watched ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-                                                        </Button>
-                                                    </TableCell>
-                                                    <TableCell className="font-medium">{collection.tick}</TableCell>
-                                                    <TableCell className="text-right">{collection.minted_count.toLocaleString()}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        {collection.total_supply
-                                                            ? collection.total_supply.toLocaleString()
-                                                            : 'Unknown'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {collection.total_supply ? (
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <div className="flex items-center justify-end">
-                                                                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                                                                                <div
-                                                                                    className={`h-full ${progressBarColor} rounded-full`}
-                                                                                    style={{
-                                                                                        width: `${mintPercentage}%`
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <div className="flex flex-col items-center">
-                                                                            <p className="font-bold">{mintPercentage}% minted</p>
-                                                                            <div className="w-full h-2 mt-1 bg-muted rounded-full overflow-hidden">
-                                                                                <div
-                                                                                    className={`h-full ${progressBarColor} rounded-full`}
-                                                                                    style={{
-                                                                                        width: `${mintPercentage}%`
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            <p className="text-xs mt-1">
-                                                                                {collection.minted_count.toLocaleString()} of {collection.total_supply.toLocaleString()}
-                                                                            </p>
-                                                                        </div>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        ) : (
-                                                            <span className="text-xs text-muted-foreground">-</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-right text-sm text-muted-foreground">
-                                                        {formatTimeAgo(collection.last_update)}
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </TabsContent>
-
                     <TabsContent value="holders" className="mt-0 space-y-4">
                         {selectedCollection && holderData ? (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center">
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center mb-2">
                                     <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
                                         View All Collections
                                     </Button>
                                 </div>
-                                <div className="flex flex-col md:flex-row gap-4">
-                                    <Card className="flex-1 p-5">
-                                        <h3 className="text-lg font-bold mb-4">{selectedCollection} Overview</h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Card className="p-4">
+                                        <h3 className="text-base font-bold mb-3">{selectedCollection} Overview</h3>
+                                        <div className="grid grid-cols-2 gap-3">
                                             <div>
                                                 <p className="text-sm text-muted-foreground">Total Supply</p>
-                                                <p className="text-xl font-bold">{holderData.totalSupply.toLocaleString()}</p>
+                                                <p className="text-lg font-bold">{holderData.totalSupply.toLocaleString()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm text-muted-foreground">Total Minted</p>
-                                                <p className="text-xl font-bold">{holderData.totalMinted.toLocaleString()}</p>
+                                                <p className="text-lg font-bold">{holderData.totalMinted.toLocaleString()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm text-muted-foreground">Total Holders</p>
-                                                <p className="text-xl font-bold">{holderData.totalHolders.toLocaleString()}</p>
+                                                <p className="text-lg font-bold">{holderData.totalHolders.toLocaleString()}</p>
                                             </div>
-                                            <div className="col-span-2 md:col-span-3">
+                                            <div>
                                                 <p className="text-sm text-muted-foreground">Minting Progress</p>
-                                                <div className="mt-2 h-3 bg-muted rounded-full overflow-hidden">
+                                                <div className="mt-1 h-2 bg-muted rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-primary rounded-full"
                                                         style={{ width: `${holderData.totalMintedPercent * 100}%` }}
@@ -761,22 +615,22 @@ const MintWatcher = () => {
                                         </div>
                                     </Card>
 
-                                    <Card className="flex-1 p-5">
-                                        <h3 className="text-lg font-bold mb-4">Holder Distribution</h3>
-                                        <div className="h-[200px] w-full">
+                                    <Card className="p-4">
+                                        <h3 className="text-base font-bold mb-3">Holder Distribution</h3>
+                                        <div className="h-36 w-full">
                                             <HolderDistributionChart holders={holderData.holders} />
                                         </div>
                                     </Card>
                                 </div>
 
                                 <Card className="overflow-hidden">
-                                    <div className="p-5 border-b">
-                                        <h3 className="text-lg font-semibold">All Holders</h3>
-                                        <p className="text-sm text-muted-foreground mt-1">
+                                    <div className="p-3 border-b">
+                                        <h3 className="text-base font-semibold">All Holders</h3>
+                                        <p className="text-xs text-muted-foreground mt-1">
                                             Showing {holderData.holders.length} holders for {selectedCollection}
                                         </p>
                                     </div>
-                                    <div className="overflow-x-auto max-h-[400px]">
+                                    <div className="overflow-x-auto max-h-64">
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
@@ -790,7 +644,7 @@ const MintWatcher = () => {
                                                     .sort((a, b) => b.count - a.count)
                                                     .map((holder, index) => (
                                                         <TableRow key={index}>
-                                                            <TableCell className="font-mono text-xs truncate max-w-[300px]">
+                                                            <TableCell className="font-mono text-xs truncate max-w-60">
                                                                 {holder.owner}
                                                             </TableCell>
                                                             <TableCell className="text-right font-medium">
@@ -808,7 +662,7 @@ const MintWatcher = () => {
                                 </Card>
                             </div>
                         ) : isHolderLoading ? (
-                            <div className="text-center py-12 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
+                            <div className="text-center py-8 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
                                 <Loader2 className="h-8 w-8 animate-spin mb-4" />
                                 <p>Loading holder data...</p>
                             </div>
@@ -816,7 +670,7 @@ const MintWatcher = () => {
                             <div className="space-y-4">
                                 <div className="text-center py-4 bg-card border rounded-xl">
                                     <h3 className="text-lg font-medium">Select a Collection to View Holders</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">Choose from the collections below to see holder distribution and details</p>
+                                    <p className="text-sm text-muted-foreground mt-1">Choose a collection to see holder distribution and details</p>
                                 </div>
 
                                 <div className="border rounded-md overflow-hidden">
@@ -828,20 +682,19 @@ const MintWatcher = () => {
                                                 <TableHead className="text-right">Minted</TableHead>
                                                 <TableHead className="text-right">Total Supply</TableHead>
                                                 <TableHead className="text-right">Progress</TableHead>
-                                                <TableHead className="text-right">Last Updated</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {isLoading ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="h-24 text-center">
+                                                    <TableCell colSpan={5} className="h-24 text-center">
                                                         <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                                                         <span className="block mt-1 text-sm text-muted-foreground">Loading collections...</span>
                                                     </TableCell>
                                                 </TableRow>
                                             ) : filteredCollections.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="h-24 text-center">
+                                                    <TableCell colSpan={5} className="h-24 text-center">
                                                         <span className="text-muted-foreground">
                                                             {searchQuery ? 'No matching collections found' : 'No collections found'}
                                                         </span>
@@ -880,7 +733,7 @@ const MintWatcher = () => {
                                                                         collection.watched ? "text-primary" : "text-muted-foreground"
                                                                     )}
                                                                 >
-                                                                    {collection.watched ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                                                                    <Bell className="h-4 w-4" />
                                                                 </Button>
                                                             </TableCell>
                                                             <TableCell className="font-medium">{collection.tick}</TableCell>
@@ -896,7 +749,7 @@ const MintWatcher = () => {
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
                                                                                 <div className="flex items-center justify-end">
-                                                                                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                                                                    <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                                                                                         <div
                                                                                             className={`h-full ${progressBarColor} rounded-full`}
                                                                                             style={{
@@ -907,29 +760,16 @@ const MintWatcher = () => {
                                                                                 </div>
                                                                             </TooltipTrigger>
                                                                             <TooltipContent>
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <p className="font-bold">{mintPercentage}% minted</p>
-                                                                                    <div className="w-full h-2 mt-1 bg-muted rounded-full overflow-hidden">
-                                                                                        <div
-                                                                                            className={`h-full ${progressBarColor} rounded-full`}
-                                                                                            style={{
-                                                                                                width: `${mintPercentage}%`
-                                                                                            }}
-                                                                                        />
-                                                                                    </div>
-                                                                                    <p className="text-xs mt-1">
-                                                                                        {collection.minted_count.toLocaleString()} of {collection.total_supply.toLocaleString()}
-                                                                                    </p>
-                                                                                </div>
+                                                                                <p className="font-bold">{mintPercentage}% minted</p>
+                                                                                <p className="text-xs">
+                                                                                    {collection.minted_count.toLocaleString()} of {collection.total_supply.toLocaleString()}
+                                                                                </p>
                                                                             </TooltipContent>
                                                                         </Tooltip>
                                                                     </TooltipProvider>
                                                                 ) : (
                                                                     <span className="text-xs text-muted-foreground">-</span>
                                                                 )}
-                                                            </TableCell>
-                                                            <TableCell className="text-right text-sm text-muted-foreground">
-                                                                {formatTimeAgo(collection.last_update)}
                                                             </TableCell>
                                                         </TableRow>
                                                     );

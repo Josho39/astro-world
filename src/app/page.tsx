@@ -16,7 +16,7 @@ export default function Home() {
   }, []);
 
   const analyticsTools = navItems.filter(item => 
-    ['Wallet Profiler', 'Profit/Loss', 'Wallet Explorer'].includes(item.name)
+    ['Wallet Profiler', 'Profit/Loss', 'Wallet Explorer', 'Mint Watcher'].includes(item.name)
   );
   
   const tradingTools = navItems.filter(item => 
@@ -24,23 +24,23 @@ export default function Home() {
   );
   
   const utilityTools = navItems.filter(item => 
-    ['Airdrop Tool', 'Mint Watcher', 'Secret Tools'].includes(item.name)
+    ['Airdrop Tool', 'Secret Tools'].includes(item.name)
   );
 
   return (
     <div className={`space-y-6 ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}>
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/30 via-primary/5 to-background p-4 md:p-8">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/30 via-primary/5 to-background p-3 md:p-6">
         <div className={`relative z-10 max-w-3xl transition-all duration-1000 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-          <Badge className="mb-2 animate-pulse bg-primary/20 hover:bg-primary/30" variant="outline">
+          <Badge className="mb-1 animate-pulse bg-primary/20 hover:bg-primary/30" variant="outline">
             <Sparkles className="w-3 h-3 mr-1" /> Kaspa Ecosystem
           </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-primary">
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-2 text-primary">
             Welcome to <span className="relative">
               Astro World
               <span className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-500 rounded-full"></span>
             </span>
           </h1>
-          <p className="text-lg text-muted-foreground mb-4 max-w-2xl">
+          <p className="text-lg text-muted-foreground mb-3 max-w-2xl">
             Advanced analytics and tools to navigate the Kaspa ecosystem with confidence and precision
           </p>
           <div className="flex flex-wrap gap-3">
@@ -105,7 +105,7 @@ export default function Home() {
                 transitionDelay: `${index * 100}ms`
               }}
             >
-              <Card className="h-full overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
+              <Card className="h-full min-h-24 overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-rose-500/10 via-primary/10 to-violet-500/10 opacity-0 group-hover:opacity-100 blur group-hover:animate-spin-slow transition-opacity duration-500" />
                 <CardHeader className="pb-2 pt-3 px-4 relative">
@@ -119,7 +119,7 @@ export default function Home() {
                     <ArrowRight className="h-4 w-4 text-rose-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative px-4 pb-3">
+                <CardContent className="relative px-4 pb-4">
                   <CardDescription className="line-clamp-2 text-xs md:text-sm">
                     {getToolDescription(item.name)}
                   </CardDescription>
@@ -147,7 +147,7 @@ export default function Home() {
                 transitionDelay: `${index * 100}ms`
               }}
             >
-              <Card className="h-full overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
+              <Card className="h-full min-h-24 overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500/10 via-primary/10 to-green-500/10 opacity-0 group-hover:opacity-100 blur group-hover:animate-spin-slow transition-opacity duration-500" />
                 <CardHeader className="pb-2 pt-3 px-4 relative">
@@ -161,7 +161,7 @@ export default function Home() {
                     <ArrowRight className="h-4 w-4 text-blue-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative px-4 pb-3">
+                <CardContent className="relative px-4 pb-4">
                   <CardDescription className="line-clamp-2 text-xs md:text-sm">
                     {getToolDescription(item.name)}
                   </CardDescription>
@@ -189,7 +189,7 @@ export default function Home() {
                 transitionDelay: `${index * 100}ms`
               }}
             >
-              <Card className="h-full overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
+              <Card className="h-full min-h-24 overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 blur group-hover:animate-spin-slow transition-opacity duration-500" />
                 <CardHeader className="pb-2 pt-3 px-4 relative">
@@ -203,7 +203,7 @@ export default function Home() {
                     <ArrowRight className="h-4 w-4 text-emerald-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </div>
                 </CardHeader>
-                <CardContent className="relative px-4 pb-3">
+                <CardContent className="relative px-4 pb-4">
                   <CardDescription className="line-clamp-2 text-xs md:text-sm">
                     {getToolDescription(item.name)}
                   </CardDescription>
