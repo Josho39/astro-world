@@ -67,6 +67,7 @@ const NavBar = () => {
         setIsMobileOpen(false);
     }, [pathname]);
 
+    // Close mobile menu on window resize to desktop size
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 768) {
@@ -78,6 +79,7 @@ const NavBar = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Prevent body scroll when mobile menu is open
     useEffect(() => {
         if (isMobileOpen) {
             document.body.style.overflow = 'hidden';
@@ -97,17 +99,22 @@ const NavBar = () => {
         }
     };
 
+    const MobileMenuButton = () => (
+        <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 left-4 z-50 md:hidden"
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+        >
+            {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </Button>
+    );
+
     return (
         <>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="fixed top-0 left-0 z-50 md:hidden rounded-none h-12 w-12"
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-            >
-                {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </Button>
-
+            <MobileMenuButton />
+            
+            {/* Mobile overlay */}
             {isMobileOpen && (
                 <div 
                     className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
@@ -115,195 +122,146 @@ const NavBar = () => {
                 />
             )}
 
-            <div 
-                className={`fixed top-0 left-0 h-full w-64 bg-background border-r z-50 transform transition-transform duration-300 md:translate-x-0 ${
-                    isMobileOpen ? 'translate-x-0' : '-translate-x-full'
-                } md:relative md:w-auto md:h-screen`}
-            >
-                <div className="flex flex-col h-full w-full">
-                    <div className="h-16 px-4 flex items-center justify-center md:justify-start mt-4">
-                        <div className="flex items-center space-x-2 overflow-hidden">
-                            <div className="relative w-8 h-8 shrink-0">
-                                <Image
-                                    src="/logo.png"
-                                    alt="Astro World"
-                                    fill
-                                    className="object-contain"
-                                />
-                            </div>
-                            <span className={`font-bold text-lg whitespace-nowrap ${!isExpanded && 'md:hidden'}`}>
-                                Astro World
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="px-2">
-                        <ThemeToggle />
-                    </div>
-
-                    <div className="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
-                        {navItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={`flex items-center px-2 py-3 rounded-lg transition-all duration-200 ${
-                                        isActive
-                                            ? 'bg-accent text-accent-foreground'
-                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                                    } group relative`}
-                                >
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex items-center">
-                                            <div className="shrink-0">
-                                                {item.icon}
-                                            </div>
-                                            <span className={`ml-3 whitespace-nowrap ${
-                                                !isExpanded && 'md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-300'
-                                            }`}>
-                                                {item.name}
-                                            </span>
-                                        </div>
-                                        <ChevronRight className={`w-4 h-4 ${
-                                            !isExpanded && !isActive && 'md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-300'
-                                        }`} />
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-
-                    <div className="px-2 py-4 border-t">
-                        <div className="h-[68px]">
-                            <button
-                                onClick={handleWalletClick}
-                                className="flex items-center w-full h-10 px-2 rounded-lg transition-all duration-200 hover:bg-accent group"
-                            >
-                                <div className="flex items-center w-full">
-                                    <div className="shrink-0">
-                                        <Power className={`w-5 h-5 ${walletConnected ? 'text-green-500' : 'text-muted-foreground'}`} />
-                                    </div>
-                                    <span className={`ml-3 whitespace-nowrap ${
-                                        !isExpanded && 'md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-300'
-                                    }`}>
-                                        {walletConnected ? 'Connected' : 'Connect Wallet'}
-                                    </span>
-                                </div>
-                            </button>
-                            {walletConnected && walletInfo && (
-                                <div className={`px-2 mt-1 text-sm ${
-                                    !isExpanded && 'md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-300'
-                                }`}>
-                                    <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
-                                    <div className="text-xs text-muted-foreground truncate">
-                                        {walletInfo.address}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="hidden md:block fixed left-0 top-0 h-screen z-40">
+            {/* Navigation sidebar - FIXED POSITION for mobile */}
+            <div className="fixed top-0 left-0 h-full z-50">
+                {/* Desktop sidebar - always visible */}
                 <nav
-                    className="h-screen bg-background border-r transition-all duration-300 ease-in-out"
-                    style={{ width: isExpanded ? '16rem' : '4rem' }}
+                    className={`hidden md:flex h-full bg-background border-r border-border text-foreground transition-all duration-300 ease-in-out
+                        ${isExpanded ? 'w-64' : 'w-16'} 
+                        group/nav relative`}
                     onMouseEnter={() => setIsExpanded(true)}
                     onMouseLeave={() => setIsExpanded(false)}
                 >
-                    <div className="flex flex-col h-full">
-                        <div className="h-16 px-4 flex items-center justify-center md:justify-start">
-                            <div className="flex items-center space-x-2 overflow-hidden">
-                                <div className="relative w-8 h-8 shrink-0">
-                                    <Image
-                                        src="/logo.png"
-                                        alt="Astro World"
-                                        fill
-                                        className="object-contain"
-                                    />
-                                </div>
-                                <span className={`font-bold text-lg whitespace-nowrap transition-opacity duration-300 ${
-                                    isExpanded ? 'opacity-100' : 'opacity-0'
-                                }`}>
-                                    Astro World
-                                </span>
-                            </div>
-                        </div>
+                    <SidebarContent 
+                        isExpanded={isExpanded}
+                        pathname={pathname}
+                        walletConnected={walletConnected}
+                        walletInfo={walletInfo}
+                        handleWalletClick={handleWalletClick}
+                    />
+                </nav>
 
-                        <div className="px-2">
-                            <ThemeToggle />
-                        </div>
-
-                        <div className="flex-1 px-2 py-4 space-y-2">
-                            {navItems.map((item) => {
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        className={`flex items-center px-2 py-3 rounded-lg transition-all duration-200 ${
-                                            isActive
-                                                ? 'bg-accent text-accent-foreground'
-                                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                                        } group relative`}
-                                    >
-                                        <div className="flex items-center justify-between w-full">
-                                            <div className="flex items-center">
-                                                <div className="shrink-0">
-                                                    {item.icon}
-                                                </div>
-                                                <span className={`ml-3 whitespace-nowrap transition-opacity duration-300 ${
-                                                    isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                }`}>
-                                                    {item.name}
-                                                </span>
-                                            </div>
-                                            <ChevronRight className={`w-4 h-4 transition-opacity duration-300 ${
-                                                isExpanded || isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                            }`} />
-                                        </div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-
-                        <div className="px-2 py-4 border-t">
-                            <div className="h-[68px]">
-                                <button
-                                    onClick={handleWalletClick}
-                                    className="flex items-center w-full h-10 px-2 rounded-lg transition-all duration-200 hover:bg-accent group"
-                                >
-                                    <div className="flex items-center w-full">
-                                        <div className="shrink-0">
-                                            <Power className={`w-5 h-5 ${walletConnected ? 'text-green-500' : 'text-muted-foreground'}`} />
-                                        </div>
-                                        <span className={`ml-3 whitespace-nowrap transition-opacity duration-300 ${
-                                            isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                        }`}>
-                                            {walletConnected ? 'Connected' : 'Connect Wallet'}
-                                        </span>
-                                    </div>
-                                </button>
-                                {walletConnected && walletInfo && (
-                                    <div className={`px-2 mt-1 text-sm transition-opacity duration-300 ${
-                                        isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                    }`}>
-                                        <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
-                                        {isExpanded && (
-                                            <div className="text-xs text-muted-foreground truncate">
-                                                {walletInfo.address}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                {/* Mobile sidebar - overlay style */}
+                <nav
+                    className={`md:hidden fixed top-0 left-0 h-full w-64 bg-background border-r border-border text-foreground
+                        transform transition-transform duration-300 ease-in-out z-50
+                        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                >
+                    <SidebarContent 
+                        isExpanded={true}
+                        pathname={pathname}
+                        walletConnected={walletConnected}
+                        walletInfo={walletInfo}
+                        handleWalletClick={handleWalletClick}
+                    />
                 </nav>
             </div>
         </>
+    );
+};
+
+interface SidebarContentProps {
+    isExpanded: boolean;
+    pathname: string;
+    walletConnected: boolean;
+    walletInfo: { balance: number; address: string } | null;
+    handleWalletClick: () => void;
+}
+
+const SidebarContent = ({ 
+    isExpanded, 
+    pathname, 
+    walletConnected, 
+    walletInfo, 
+    handleWalletClick 
+}: SidebarContentProps) => {
+    return (
+        <div className="flex flex-col h-full w-full">
+            <div className="h-16 px-4 flex items-center justify-center md:justify-start mt-4 md:mt-0">
+                <div className="flex items-center space-x-2 overflow-hidden">
+                    <div className="relative w-8 h-8 shrink-0">
+                        <Image
+                            src="/logo.png"
+                            alt="Astro World"
+                            fill
+                            className="object-contain"
+                        />
+                    </div>
+                    <span className={`font-bold text-lg whitespace-nowrap transition-opacity duration-300
+                        ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                        Astro World
+                    </span>
+                </div>
+            </div>
+
+            <div className="px-2">
+                <ThemeToggle />
+            </div>
+
+            <div className="flex-1 px-2 py-4 space-y-2">
+                {navItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`flex items-center px-2 py-3 rounded-lg transition-all duration-200
+                                ${isActive
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                }
+                                group/item relative
+                            `}
+                        >
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center">
+                                    <div className="shrink-0">
+                                        {item.icon}
+                                    </div>
+                                    <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
+                                        ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}>
+                                        {item.name}
+                                    </span>
+                                </div>
+                                <ChevronRight className={`w-4 h-4 transition-opacity duration-300
+                                    ${isExpanded || isActive ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}
+                                />
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
+
+            <div className="px-2 py-4 border-t border-border">
+                <div className="h-[68px]">
+                    <button
+                        onClick={handleWalletClick}
+                        className="flex items-center w-full h-10 px-2 rounded-lg transition-all duration-200 hover:bg-accent group/wallet"
+                    >
+                        <div className="flex items-center w-full">
+                            <div className="shrink-0">
+                                <Power className={`w-5 h-5 ${walletConnected ? 'text-green-500' : 'text-muted-foreground'}`} />
+                            </div>
+                            <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
+                                ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}>
+                                {walletConnected ? 'Connected' : 'Connect Wallet'}
+                            </span>
+                        </div>
+                    </button>
+                    {walletConnected && walletInfo && (
+                        <div className={`px-2 mt-1 text-sm transition-opacity duration-300
+                            ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}>
+                            <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
+                            {isExpanded && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                    {walletInfo.address}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 };
 
