@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useTheme } from 'next-themes';
 
 interface CandleData {
   timestamp: string;
@@ -35,11 +36,22 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   timeRange = '1d',
   priceType = 'usd'
 }) => {
+  const { theme } = useTheme();
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const chartInitialized = useRef<boolean>(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const getTVTheme = () => {
+    if (!mounted) return 'Dark';
+    return theme === 'dark' ? 'Dark' : 'Light';
+  };
 
   const fetchChartData = async () => {
     try {
@@ -188,6 +200,8 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   };
 
   useEffect(() => {
+    if (!mounted) return;
+    
     const loadLibraries = () => {
       return new Promise<void>((resolve) => {
         if (window.TradingView) {
@@ -244,6 +258,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
         }
         
         const datafeed = createDatafeed(data);
+        const currentTheme = getTVTheme();
         
         window.tvWidget = new window.TradingView.widget({
           debug: true,
@@ -253,7 +268,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           datafeed: datafeed,
           library_path: '/charting_library/',
           locale: 'en',
-          theme: 'Dark',
+          theme: currentTheme,
           autosize: true,
           disabled_features: [
             'use_localstorage_for_settings',
@@ -333,13 +348,17 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     return () => {
       cleanupChart();
     };
-  }, [ticker, timeRange, priceType]);
+  }, [ticker, timeRange, priceType, theme, mounted]);
+
+  if (!mounted) {
+    return <div className="w-full h-full bg-background"></div>;
+  }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-800 text-white p-4 rounded-lg">
+      <div className="flex items-center justify-center h-full bg-muted text-foreground p-4 rounded-lg">
         <div className="text-center">
-          <p className="font-bold text-red-400">Error loading chart</p>
+          <p className="font-bold text-destructive">Error loading chart</p>
           <p>{error}</p>
           <button 
             onClick={() => {
@@ -347,7 +366,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
               setIsLoading(true);
               fetchChartData();
             }}
-            className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded"
+            className="mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded"
           >
             Retry
           </button>
@@ -357,10 +376,10 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full" style={{ minHeight: '100%' }}>
+    <div className="relative w-full h-full">
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       )}
       <div ref={containerRef} className="w-full h-full"></div>
