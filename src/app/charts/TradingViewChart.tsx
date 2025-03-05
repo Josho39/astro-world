@@ -31,8 +31,8 @@ declare global {
   }
 }
 
-const TradingViewChart: React.FC<TradingViewChartProps> = ({ 
-  ticker, 
+const TradingViewChart: React.FC<TradingViewChartProps> = ({
+  ticker,
   timeRange = '1d',
   priceType = 'usd'
 }) => {
@@ -57,21 +57,21 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     try {
       setIsLoading(true);
       const response = await fetch(`/api/chart-data?ticker=${ticker}&timeRange=${timeRange}`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (!data.candles || !Array.isArray(data.candles)) {
         throw new Error('Invalid data format returned from API');
       }
-      
+
       if (data.candles.length === 0) {
         throw new Error(`No candle data available for ${ticker} with ${timeRange} time range`);
       }
-      
+
       setChartData(data);
       return data;
     } catch (err) {
@@ -90,23 +90,23 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
       const bars = data.candles.map(candle => {
         try {
           const timestamp = new Date(candle.timestamp).getTime();
-          
-          const open = priceType === 'kas' && candle.open_kas 
-            ? parseFloat(candle.open_kas) || 0 
+
+          const open = priceType === 'kas' && candle.open_kas
+            ? parseFloat(candle.open_kas) || 0
             : parseFloat(candle.open) || 0;
-            
-          const high = priceType === 'kas' && candle.high_kas 
-            ? parseFloat(candle.high_kas) || 0 
+
+          const high = priceType === 'kas' && candle.high_kas
+            ? parseFloat(candle.high_kas) || 0
             : parseFloat(candle.high) || 0;
-            
-          const low = priceType === 'kas' && candle.low_kas 
-            ? parseFloat(candle.low_kas) || 0 
+
+          const low = priceType === 'kas' && candle.low_kas
+            ? parseFloat(candle.low_kas) || 0
             : parseFloat(candle.low) || 0;
-            
-          const close = priceType === 'kas' && candle.close_kas 
-            ? parseFloat(candle.close_kas) || 0 
+
+          const close = priceType === 'kas' && candle.close_kas
+            ? parseFloat(candle.close_kas) || 0
             : parseFloat(candle.close) || 0;
-          
+
           return {
             time: timestamp,
             open: open,
@@ -119,9 +119,9 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           return null;
         }
       }).filter(bar => bar !== null);
-      
+
       bars.sort((a, b) => a.time - b.time);
-      
+
       return bars;
     } catch (error) {
       return [];
@@ -130,10 +130,10 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
   const createDatafeed = (data: ChartData) => {
     const allBars = processCandles(data);
-    
+
     const firstTime = allBars.length > 0 ? allBars[0].time : 0;
     const lastTime = allBars.length > 0 ? allBars[allBars.length - 1].time : 0;
-    
+
     return {
       onReady: (callback: (config: any) => void) => {
         setTimeout(() => callback({
@@ -143,7 +143,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           supports_timescale_marks: false
         }), 0);
       },
-      searchSymbols: () => {},
+      searchSymbols: () => { },
       resolveSymbol: (symbolName: string, onSymbolResolvedCallback: (symbolInfo: any) => void) => {
         setTimeout(() => {
           onSymbolResolvedCallback({
@@ -171,37 +171,37 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
         try {
           const from = periodParams.from * 1000;
           const to = periodParams.to * 1000;
-          
+
           if (to < firstTime) {
             onHistoryCallback([], { noData: true });
             return;
           }
-          
+
           if (from > lastTime) {
             onHistoryCallback([], { noData: true });
             return;
           }
-          
+
           const filteredBars = allBars.filter(bar => bar.time >= from && bar.time <= to);
-          
+
           if (filteredBars.length === 0) {
             onHistoryCallback([], { noData: true });
             return;
           }
-          
+
           onHistoryCallback(filteredBars, { noData: false });
         } catch (error) {
           onErrorCallback(error);
         }
       },
-      subscribeBars: () => {},
-      unsubscribeBars: () => {}
+      subscribeBars: () => { },
+      unsubscribeBars: () => { }
     };
   };
 
   useEffect(() => {
     if (!mounted) return;
-    
+
     const loadLibraries = () => {
       return new Promise<void>((resolve) => {
         if (window.TradingView) {
@@ -212,11 +212,11 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
         const script1 = document.createElement('script');
         script1.src = "/charting_library/charting_library.standalone.js";
         script1.async = true;
-        
+
         const script2 = document.createElement('script');
         script2.src = "/datafeeds/udf/dist/bundle.js";
         script2.async = true;
-        
+
         let loadedCount = 0;
         const onScriptLoad = () => {
           loadedCount++;
@@ -224,10 +224,10 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
             resolve();
           }
         };
-        
+
         script1.addEventListener('load', onScriptLoad);
         script2.addEventListener('load', onScriptLoad);
-        
+
         document.head.appendChild(script1);
         document.head.appendChild(script2);
       });
@@ -248,18 +248,18 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
       try {
         await loadLibraries();
-        
+
         const data = await fetchChartData();
         if (!data) return;
-        
+
         if (!containerRef.current) {
           setError("Chart container not found");
           return;
         }
-        
+
         const datafeed = createDatafeed(data);
         const currentTheme = getTVTheme();
-        
+
         window.tvWidget = new window.TradingView.widget({
           debug: true,
           symbol: ticker + (priceType === 'kas' ? '/KAS' : '/USD'),
@@ -294,18 +294,18 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           client_id: 'tradingview.com',
           user_id: 'public_user_id'
         });
-        
+
         window.tvWidget.onChartReady(() => {
           window.tvWidget.chart().createStudy('Volume', true, false, undefined, {
             'showLabelsOnPriceScale': false
           });
-          
+
           const chart = window.tvWidget.chart();
           const lastBar = data.candles[data.candles.length - 1];
           if (lastBar) {
             const endTime = new Date(lastBar.timestamp).getTime() / 1000;
             let startTime;
-            
+
             switch (timeRange) {
               case '1d':
                 startTime = endTime - (24 * 60 * 60);
@@ -322,13 +322,13 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
               default:
                 startTime = endTime - (24 * 60 * 60);
             }
-            
+
             chart.setVisibleRange({
               from: startTime,
               to: endTime
             });
           }
-          
+
           setTimeout(() => {
             const iframe = containerRef.current?.querySelector('iframe');
             if (iframe) {
@@ -356,17 +356,17 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full bg-muted text-foreground p-4 rounded-lg">
+      <div className="flex items-center justify-center h-full bg-muted text-foreground p-1 rounded-lg">
         <div className="text-center">
           <p className="font-bold text-destructive">Error loading chart</p>
           <p>{error}</p>
-          <button 
+          <button
             onClick={() => {
               setError(null);
               setIsLoading(true);
               fetchChartData();
             }}
-            className="mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded"
+            className="mt-1 px-4 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded"
           >
             Retry
           </button>
