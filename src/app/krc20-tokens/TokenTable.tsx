@@ -7,6 +7,7 @@ import { Loader2, ArrowDown, ArrowUp, ArrowUpDown, Star } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
 
 interface TokenData {
   _id: string;
@@ -23,6 +24,7 @@ interface TokenData {
 }
 
 const TokenTable = () => {
+  const router = useRouter();
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +58,6 @@ const TokenTable = () => {
     return num.toFixed(0);
   };
   
-
   const toggleFavorite = (tokenId: string) => {
     const newFavorites = new Set(favorites);
     if (newFavorites.has(tokenId)) {
@@ -91,6 +92,10 @@ const TokenTable = () => {
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
+  };
+  
+  const navigateToChart = (ticker: string) => {
+    router.push(`/charts?ticker=${ticker}`);
   };
 
   const sortedTokens = useMemo(() => {
@@ -170,7 +175,15 @@ const TokenTable = () => {
           </TableHeader>
           <TableBody>
             {sortedTokens.map((token) => (
-              <TableRow key={token._id} className={`group ${favorites.has(token._id) ? 'bg-yellow-500/5' : ''}`}>
+              <TableRow 
+                key={token._id} 
+                className={`group ${favorites.has(token._id) ? 'bg-yellow-500/5' : ''} hover:bg-accent/20 cursor-pointer`}
+                onClick={(e) => {
+                  // Prevent navigation if clicking the favorite button
+                  if ((e.target as HTMLElement).closest('button')) return;
+                  navigateToChart(token.ticker);
+                }}
+              >
                 <TableCell className="w-[40px] px-2">
                   <Button variant="ghost" size="icon" onClick={() => toggleFavorite(token._id)} className="h-6 w-6">
                     <Star className={`h-4 w-4 ${favorites.has(token._id) ? 'text-yellow-500' : 'text-muted-foreground'}`} fill={favorites.has(token._id) ? "currentColor" : "none"} />

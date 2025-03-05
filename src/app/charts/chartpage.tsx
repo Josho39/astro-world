@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TradingViewChart from './TradingViewChart';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,25 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { DollarSign, Coins } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 const ChartPage = () => {
-    const [ticker, setTicker] = useState<string>('BURT');
+    const searchParams = useSearchParams();
+    const tickerParam = searchParams.get('ticker');
+    
+    const [ticker, setTicker] = useState<string>(tickerParam || 'BURT');
     const [timeRange, setTimeRange] = useState<'1d' | '7d' | '1m' | '1y'>('1d');
     const [priceType, setPriceType] = useState<'usd' | 'kas'>('usd');
-    const [inputTicker, setInputTicker] = useState<string>('BURT');
+    const [inputTicker, setInputTicker] = useState<string>(tickerParam || 'BURT');
     const [key, setKey] = useState<number>(0);
+
+    useEffect(() => {
+        if (tickerParam) {
+            setTicker(tickerParam);
+            setInputTicker(tickerParam);
+            setKey(prev => prev + 1);
+        }
+    }, [tickerParam]);
 
     const handleSearch = () => {
         if (inputTicker.trim()) {
@@ -60,7 +72,6 @@ const ChartPage = () => {
 
                         <div className="flex flex-col sm:flex-row items-center">
                             <div className="flex items-center">
-
                                 <div className="flex gap-4">
                                     <Button
                                         variant={priceType === 'usd' ? "default" : "outline"}
@@ -70,7 +81,6 @@ const ChartPage = () => {
                                     >
                                         <DollarSign className="h-4 w-4" />
                                         USD
-
                                     </Button>
                                     <Button
                                         variant={priceType === 'kas' ? "default" : "outline"}
@@ -83,7 +93,6 @@ const ChartPage = () => {
                                     </Button>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 

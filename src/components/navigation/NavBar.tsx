@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Wallet, Banknote, Box, Eye, LineChart, Star, Search, Lock, ChevronRight, Power, Calculator, Coins, Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -62,13 +62,18 @@ const NavBar = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { walletConnected, walletInfo, connectWallet, disconnectWallet } = useWallet();
+    
+    // Track if we're on desktop
+    const [isDesktop, setIsDesktop] = useState(false);
 
     useEffect(() => {
-        setIsMobileOpen(false);
-    }, [pathname]);
-    useEffect(() => {
+        // Initialize desktop state on component mount
+        setIsDesktop(window.innerWidth >= 768);
+        
         const handleResize = () => {
-            if (window.innerWidth >= 768) {
+            const desktop = window.innerWidth >= 768;
+            setIsDesktop(desktop);
+            if (desktop) {
                 setIsMobileOpen(false);
             }
         };
@@ -76,6 +81,10 @@ const NavBar = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [pathname]);
 
     useEffect(() => {
         if (isMobileOpen) {
@@ -87,6 +96,21 @@ const NavBar = () => {
             document.body.style.overflow = '';
         };
     }, [isMobileOpen]);
+
+    useEffect(() => {
+        if (!isDesktop) return;
+        
+        const handleMouseMove = (e: MouseEvent) => {
+            if (e.clientX <= 60) {
+                setIsExpanded(true);
+            } else if (e.clientX > 260 || (e.clientX > 70 && !isExpanded)) {
+                setIsExpanded(false);
+            }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        return () => document.removeEventListener('mousemove', handleMouseMove);
+    }, [isDesktop, isExpanded]);
 
     const handleWalletClick = async () => {
         if (walletConnected) {
@@ -123,8 +147,6 @@ const NavBar = () => {
                     className={`hidden md:flex h-full bg-background border-r border-border text-foreground transition-all duration-300 ease-in-out
                         ${isExpanded ? 'w-64' : 'w-16'} 
                         group/nav relative`}
-                    onMouseEnter={() => setIsExpanded(true)}
-                    onMouseLeave={() => setIsExpanded(false)}
                 >
                     <SidebarContent
                         isExpanded={isExpanded}
@@ -212,12 +234,12 @@ const SidebarContent = ({
                                         {item.icon}
                                     </div>
                                     <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
-                                        ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}>
+                                        ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
                                         {item.name}
                                     </span>
                                 </div>
                                 <ChevronRight className={`w-4 h-4 transition-opacity duration-300
-                                    ${isExpanded || isActive ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}
+                                    ${isExpanded || isActive ? 'opacity-100' : 'opacity-0'}`}
                                 />
                             </div>
                         </Link>
@@ -236,14 +258,14 @@ const SidebarContent = ({
                                 <Power className={`w-5 h-5 ${walletConnected ? 'text-green-500' : 'text-muted-foreground'}`} />
                             </div>
                             <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
-                                ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}>
+                                ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
                                 {walletConnected ? 'Connected' : 'Connect Wallet'}
                             </span>
                         </div>
                     </button>
                     {walletConnected && walletInfo && (
                         <div className={`px-2 mt-1 text-sm transition-opacity duration-300
-                            ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover/nav:opacity-100'}`}>
+                            ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
                             <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
                             {isExpanded && (
                                 <div className="text-xs text-muted-foreground truncate">
