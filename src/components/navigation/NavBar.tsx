@@ -66,20 +66,17 @@ const NavBar = () => {
     useEffect(() => {
         setIsMobileOpen(false);
     }, [pathname]);
-
-    // Close mobile menu on window resize to desktop size
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 768) {
                 setIsMobileOpen(false);
             }
         };
-        
+
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Prevent body scroll when mobile menu is open
     useEffect(() => {
         if (isMobileOpen) {
             document.body.style.overflow = 'hidden';
@@ -103,7 +100,7 @@ const NavBar = () => {
         <Button
             variant="ghost"
             size="icon"
-            className="fixed top-4 left-4 z-50 md:hidden"
+            className="fixed top-0 left-0 z-50 md:hidden rounded-none h-10 w-10"
             onClick={() => setIsMobileOpen(!isMobileOpen)}
         >
             {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -113,18 +110,15 @@ const NavBar = () => {
     return (
         <>
             <MobileMenuButton />
-            
-            {/* Mobile overlay */}
+
             {isMobileOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
 
-            {/* Navigation sidebar - FIXED POSITION for mobile */}
             <div className="fixed top-0 left-0 h-full z-50">
-                {/* Desktop sidebar - always visible */}
                 <nav
                     className={`hidden md:flex h-full bg-background border-r border-border text-foreground transition-all duration-300 ease-in-out
                         ${isExpanded ? 'w-64' : 'w-16'} 
@@ -132,7 +126,7 @@ const NavBar = () => {
                     onMouseEnter={() => setIsExpanded(true)}
                     onMouseLeave={() => setIsExpanded(false)}
                 >
-                    <SidebarContent 
+                    <SidebarContent
                         isExpanded={isExpanded}
                         pathname={pathname}
                         walletConnected={walletConnected}
@@ -141,13 +135,12 @@ const NavBar = () => {
                     />
                 </nav>
 
-                {/* Mobile sidebar - overlay style */}
                 <nav
                     className={`md:hidden fixed top-0 left-0 h-full w-64 bg-background border-r border-border text-foreground
                         transform transition-transform duration-300 ease-in-out z-50
                         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 >
-                    <SidebarContent 
+                    <SidebarContent
                         isExpanded={true}
                         pathname={pathname}
                         walletConnected={walletConnected}
@@ -168,12 +161,12 @@ interface SidebarContentProps {
     handleWalletClick: () => void;
 }
 
-const SidebarContent = ({ 
-    isExpanded, 
-    pathname, 
-    walletConnected, 
-    walletInfo, 
-    handleWalletClick 
+const SidebarContent = ({
+    isExpanded,
+    pathname,
+    walletConnected,
+    walletInfo,
+    handleWalletClick
 }: SidebarContentProps) => {
     return (
         <div className="flex flex-col h-full w-full">
