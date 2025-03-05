@@ -271,7 +271,7 @@ const MintWatcher = () => {
             setIsHolderLoading(false);
         }
     };
-    
+
     const fetchMetadata = async (tick: string, id: number) => {
         try {
             const url = `https://cache.krc721.stream/krc721/mainnet/metadata/${tick}/${id}`;
@@ -467,8 +467,8 @@ const MintWatcher = () => {
                     </div>
                 </div>
 
-                <div className="p-2">
-                    <TabsContent value="recent-mints" className="mt-0 space-y-2">
+                <div className="p-4">
+                    <TabsContent value="recent-mints" className="mt-0 space-y-4">
                         {selectedCollection && (
                             <div className="flex justify-between items-center mb-2">
                                 <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
@@ -489,92 +489,120 @@ const MintWatcher = () => {
                                 <p className="text-sm mt-1 max-w-md mx-auto">Try refreshing or check back later for updates on new mints.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                {filteredMints.map((mint, index) => {
-                                    const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
-                                    return (
-                                        <div key={`${mint.tick}-${mint.id}-${index}`} className="group perspective-1000 h-72">
-                                            <div
-                                                className={cn(
-                                                    "relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",
-                                                    isFlipped ? "rotate-y-180" : ""
-                                                )}
-                                                onClick={() => toggleCardFlip(mint.tick, mint.id)}
-                                            >
-                                                <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden border bg-card">
-                                                    <div className="relative aspect-square w-full bg-muted">
-                                                        {mint.thumbnail_url ? (
-                                                            <img
-                                                                src={mint.thumbnail_url}
-                                                                alt={`${mint.tick} #${mint.id}`}
-                                                                className="w-full h-full object-cover"
-                                                                onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = "/placeholder-nft.png";
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
+                            <><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                        {filteredMints.map((mint, index) => {
+                                            const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
+
+                                            return (
+                                                <div key={`${mint.tick}-${mint.id}-${index}`}
+                                                    className="relative min-h-[350px]"
+                                                    style={{
+                                                        perspective: '1000px'
+                                                    }}>
+                                                    <div
+                                                        className={`w-full h-full transition-all duration-500 relative ${isFlipped ? 'rotate-y-180' : ''}`}
+                                                        style={{
+                                                            transformStyle: 'preserve-3d',
+                                                            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                                        }}
+                                                    >
+                                                        <Card
+                                                            className="cursor-pointer absolute w-full h-full backface-hidden group border shadow-sm hover:shadow-md transition-shadow"
+                                                            style={{
+                                                                backfaceVisibility: 'hidden',
+                                                            }}
+                                                            onClick={() => toggleCardFlip(mint.tick, mint.id)}
+                                                        >
+                                                            <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                                                                {mint.thumbnail_url ? (
+                                                                    <img
+                                                                        src={mint.thumbnail_url}
+                                                                        alt={`${mint.tick} #${mint.id}`}
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => {
+                                                                            (e.target as HTMLImageElement).src = "/placeholder-nft.png";
+                                                                        } } />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center">
+                                                                        <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
+                                                                    </div>
+                                                                )}
+                                                                <Badge className="absolute top-2 right-2 bg-background/90 text-foreground font-semibold">
+                                                                    #{mint.id}
+                                                                </Badge>
                                                             </div>
-                                                        )}
-                                                        <Badge className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm text-foreground">
-                                                            #{mint.id}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="h-12 p-2 flex justify-between items-center">
-                                                        <div className="font-medium truncate">
-                                                            {mint.tick}
-                                                        </div>
-                                                        <div className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary whitespace-nowrap">
-                                                            {formatTimeAgo(mint.timestamp)}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden border bg-card p-3">
-                                                    <div className="h-full flex flex-col">
-                                                        <h3 className="text-sm font-bold truncate">
-                                                            {mint.metadata?.name || `${mint.tick} #${mint.id}`}
-                                                        </h3>
-
-                                                        <div className="mt-1 flex-1 overflow-y-auto text-xs">
-                                                            {!mint.metadata ? (
-                                                                <div className="h-full flex items-center justify-center">
-                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                            <div className="p-3 border-t bg-card">
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <h3 className="font-bold text-base truncate">{mint.tick}</h3>
+                                                                    <span className="text-xs bg-primary/10 text-primary rounded px-2 py-0.5 whitespace-nowrap">
+                                                                        {formatTimeAgo(mint.timestamp)}
+                                                                    </span>
                                                                 </div>
-                                                            ) : (
-                                                                <div>
-                                                                    {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
-                                                                        <div className="space-y-1 pt-1">
-                                                                            <div className="grid grid-cols-2 gap-1">
-                                                                                {mint.metadata.attributes.slice(0, 100).map((attr, idx) => (
-                                                                                    <div
-                                                                                        key={idx}
-                                                                                        className="bg-primary/5 p-1 rounded truncate"
-                                                                                    >
-                                                                                        <span className="font-medium text-primary/70 text-[10px]">{attr.trait_type}: </span>
-                                                                                        <span className="text-[10px]">{attr.value}</span>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    Click to view details
+                                                                </p>
+                                                            </div>
+                                                        </Card>
+
+                                                        <Card
+                                                            className="cursor-pointer absolute w-full h-full backface-hidden group border shadow-sm hover:shadow-md transition-shadow"
+                                                            style={{
+                                                                backfaceVisibility: 'hidden',
+                                                                transform: 'rotateY(180deg)'
+                                                            }}
+                                                            onClick={() => toggleCardFlip(mint.tick, mint.id)}
+                                                        >
+                                                            <div className="flex flex-col h-full">
+                                                                <div className="flex-1 aspect-square overflow-y-auto p-3">
+                                                                    {mint.metadata ? (
+                                                                        <div>
+                                                                            {mint.metadata.name && (
+                                                                                <p className="font-medium text-foreground mb-2">{mint.metadata.name}</p>
+                                                                            )}
+
+                                                                            {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
+                                                                                <div className="grid grid-cols-2 gap-1 mt-1">
+                                                                                    {mint.metadata.attributes.slice(0, 100).map((attr, idx) => (
+                                                                                        <div key={idx} className="bg-primary/5 p-1 rounded truncate">
+                                                                                            <span className="font-medium text-primary/70">{attr.trait_type}: </span>
+                                                                                            <span>{attr.value}</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center justify-center h-full">
+                                                                            <Loader2 className="h-6 w-6 animate-spin" />
                                                                         </div>
                                                                     )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="mt-1 flex justify-between items-center pt-1 border-t">
-                                                            <span className="text-xs text-muted-foreground">
-                                                                Tap to flip
-                                                            </span>
-                                                        </div>
+                                                                <div className="p-3 border-t bg-card mt-auto">
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <h3 className="font-bold text-base truncate">{mint.tick}</h3>
+                                                                        <Badge className="bg-background/90 text-foreground font-semibold">
+                                                                            #{mint.id}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        Click to flip back
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </Card>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                            );
+                                        })}
+                                    </div><style jsx global>{`
+                              .backface-hidden {
+                                -webkit-backface-visibility: hidden;
+                                backface-visibility: hidden;
+                              }
+                              .rotate-y-180 {
+                                transform: rotateY(180deg);
+                              }
+                            `}</style></>
                         )}
                     </TabsContent>
 
