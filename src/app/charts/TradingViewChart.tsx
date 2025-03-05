@@ -53,6 +53,21 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     return theme === 'dark' ? 'Dark' : 'Light';
   };
 
+  const getResolutionForTimeRange = () => {
+    switch (timeRange) {
+      case '1d':
+        return '15';
+      case '7d':
+        return '60';
+      case '1m':
+        return '240';
+      case '1y':
+        return '720';
+      default:
+        return '15';
+    }
+  };
+
   const fetchChartData = async () => {
     try {
       setIsLoading(true);
@@ -130,14 +145,14 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
   const createDatafeed = (data: ChartData) => {
     const allBars = processCandles(data);
-
+    const resolution = getResolutionForTimeRange();
     const firstTime = allBars.length > 0 ? allBars[0].time : 0;
     const lastTime = allBars.length > 0 ? allBars[allBars.length - 1].time : 0;
 
     return {
       onReady: (callback: (config: any) => void) => {
         setTimeout(() => callback({
-          supported_resolutions: ['60'],
+          supported_resolutions: [resolution],
           supports_time: true,
           supports_marks: false,
           supports_timescale_marks: false
@@ -159,7 +174,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
             has_intraday: true,
             has_daily: true,
             has_weekly_and_monthly: true,
-            supported_resolutions: ['60'],
+            supported_resolutions: [resolution],
             volume_precision: 8,
             data_status: 'streaming',
             first_data_at: firstTime / 1000,
@@ -259,11 +274,12 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
 
         const datafeed = createDatafeed(data);
         const currentTheme = getTVTheme();
+        const resolution = getResolutionForTimeRange();
 
         window.tvWidget = new window.TradingView.widget({
           debug: true,
           symbol: ticker + (priceType === 'kas' ? '/KAS' : '/USD'),
-          interval: '60',
+          interval: resolution,
           container: containerRef.current,
           datafeed: datafeed,
           library_path: '/charting_library/',
@@ -284,10 +300,10 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
             'volume_force_overlay'
           ],
           time_frames: [
-            { text: "1D", resolution: "60", description: "1 Day" },
+            { text: "1D", resolution: "15", description: "1 Day" },
             { text: "1W", resolution: "60", description: "1 Week" },
-            { text: "1M", resolution: "60", description: "1 Month" },
-            { text: "1Y", resolution: "60", description: "1 Year" },
+            { text: "1M", resolution: "240", description: "1 Month" },
+            { text: "1Y", resolution: "720", description: "1 Year" },
           ],
           charts_storage_url: 'https://saveload.tradingview.com',
           charts_storage_api_version: '1.1',
