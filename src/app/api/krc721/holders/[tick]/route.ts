@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tick: string } }
+  context: { params: { tick: string } }
 ) {
   try {
-    const { tick } = params;
+    const { tick } = context.params;
 
     if (!tick) {
       return NextResponse.json(
