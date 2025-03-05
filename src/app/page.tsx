@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, TrendingUp, Clock, Star, Sparkles, BarChart3, Layers } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import AnimatedParticles from '@/components/AnimatedParticles';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -70,22 +71,7 @@ export default function Home() {
           <div className="w-40 h-40 md:w-64 md:h-64 rounded-full bg-green-400 blur-3xl animate-bounce duration-15000" />
         </div>
         
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(6)].map((_, i) => (
-            <div 
-              key={i}
-              className="absolute rounded-full bg-primary/30 animate-float"
-              style={{
-                width: `${Math.random() * 10 + 5}px`,
-                height: `${Math.random() * 10 + 5}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${Math.random() * 10 + 10}s`
-              }}
-            />
-          ))}
-        </div>
+        {isLoaded && <AnimatedParticles />}
       </div>
 
       <div className={`space-y-3 transition-all duration-1000 delay-300 transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
