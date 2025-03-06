@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Wallet, Banknote, Box, Eye, LineChart, Star, Search, Lock, ChevronRight, Power, Calculator, Coins, Menu, X } from 'lucide-react';
+import { Wallet, Banknote, Box, Eye, LineChart, Star, Search, Lock, ChevronRight, Power, Calculator, Coins, Menu, X, Home, Palette } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -11,49 +11,70 @@ import { Button } from '@/components/ui/button';
 
 export const navItems = [
     {
+        name: 'Home',
+        icon: <Home className="w-5 h-5" />,
+        href: '/',
+        category: 'main'
+    },
+    {
         name: 'KRC-20',
         icon: <Coins className="w-5 h-5" />,
         href: '/krc20-tokens',
+        category: 'krc20'
     },
     {
         name: 'Charts',
         icon: <LineChart className="w-5 h-5" />,
         href: '/charts',
-    },
-    {
-        name: 'Wallet Profiler',
-        icon: <Wallet className="w-5 h-5" />,
-        href: '/wallet-profiler',
+        category: 'krc20'
     },
     {
         name: 'KRC Arb Calc',
         icon: <Calculator className="w-5 h-5" />,
         href: '/krc-arb-tracker',
+        category: 'krc20'
     },
     {
-        name: 'Profit/Loss',
-        icon: <Banknote className="w-5 h-5" />,
-        href: '/profit-loss',
-    },
-    {
-        name: 'Airdrop Tool',
-        icon: <Box className="w-5 h-5" />,
-        href: '/airdrop-tool',
-    },
-    {
-        name: 'Wallet Explorer',
-        icon: <Eye className="w-5 h-5" />,
-        href: '/wallet-explorer',
+        name: 'KRC-721 Explorer',
+        icon: <Palette className="w-5 h-5" />,
+        href: '/krc721-tokens',
+        category: 'krc721'
     },
     {
         name: 'Mint Watcher',
         icon: <Star className="w-5 h-5" />,
         href: '/mint-watcher',
+        category: 'krc721'
+    },
+    {
+        name: 'Wallet Profiler',
+        icon: <Wallet className="w-5 h-5" />,
+        href: '/wallet-profiler',
+        category: 'utility'
+    },
+    {
+        name: 'Profit/Loss',
+        icon: <Banknote className="w-5 h-5" />,
+        href: '/profit-loss',
+        category: 'utility'
+    },
+    {
+        name: 'Airdrop Tool',
+        icon: <Box className="w-5 h-5" />,
+        href: '/airdrop-tool',
+        category: 'utility'
+    },
+    {
+        name: 'Wallet Explorer',
+        icon: <Eye className="w-5 h-5" />,
+        href: '/wallet-explorer',
+        category: 'utility'
     },
     {
         name: 'Secret Tools',
         icon: <Lock className="w-5 h-5" />,
         href: '/secret-tools',
+        category: 'utility'
     },
 ];
 
@@ -64,7 +85,7 @@ const NavBar = () => {
     const { walletConnected, walletInfo, connectWallet, disconnectWallet } = useWallet();
 
     const [isDesktop, setIsDesktop] = useState(false);
-    const navRef = useRef<HTMLDivElement>(null);
+    const navRef = useRef(null);
 
     useEffect(() => {
         setIsDesktop(window.innerWidth >= 768);
@@ -131,7 +152,6 @@ const NavBar = () => {
             )}
 
             <div className="fixed top-0 left-0 h-full z-50" ref={navRef}>
-                {/* Desktop sidebar */}
                 <nav
                     className={`hidden md:flex h-full bg-background border-r border-border text-foreground 
                         transition-all duration-300 ease-in-out 
@@ -149,7 +169,6 @@ const NavBar = () => {
                     />
                 </nav>
 
-                {/* Mobile sidebar */}
                 <nav
                     className={`md:hidden fixed top-0 left-0 h-full w-64 bg-background border-r border-border text-foreground
                         transform transition-transform duration-300 ease-in-out z-50
@@ -186,6 +205,11 @@ const SidebarContent = ({
     handleWalletClick,
     toggleMenu
 }: SidebarContentProps) => {
+    const krc20Items = navItems.filter(item => item.category === 'krc20');
+    const krc721Items = navItems.filter(item => item.category === 'krc721');
+    const utilityItems = navItems.filter(item => item.category === 'utility');
+    const mainItems = navItems.filter(item => item.category === 'main');
+
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
             <Button
@@ -218,38 +242,39 @@ const SidebarContent = ({
                 <ThemeToggle />
             </div>
 
-            <div className="flex-1 px-2 py-4 space-y-2 overflow-hidden">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center px-2 py-3 rounded-lg transition-all duration-200
-                                ${isActive
-                                    ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                                }
-                                group/item relative
-                            `}
-                        >
-                            <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center">
-                                    <div className="shrink-0">
-                                        {item.icon}
-                                    </div>
-                                    <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
-                                        ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                                        {item.name}
-                                    </span>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 transition-opacity duration-300
-                                    ${isExpanded || isActive ? 'opacity-100' : 'opacity-0'}`}
-                                />
-                            </div>
-                        </Link>
-                    );
-                })}
+            <div className="flex-1 px-2 py-4 space-y-6 overflow-hidden">
+                {mainItems.length > 0 && (
+                    <div className="space-y-2">
+                        {mainItems.map((item) => renderNavItem(item, pathname, isExpanded))}
+                    </div>
+                )}
+
+                {krc20Items.length > 0 && (
+                    <div className="space-y-2">
+                        <div className={`px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                            KRC-20
+                        </div>
+                        {krc20Items.map((item) => renderNavItem(item, pathname, isExpanded))}
+                    </div>
+                )}
+
+                {krc721Items.length > 0 && (
+                    <div className="space-y-2">
+                        <div className={`px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                            KRC-721
+                        </div>
+                        {krc721Items.map((item) => renderNavItem(item, pathname, isExpanded))}
+                    </div>
+                )}
+
+                {utilityItems.length > 0 && (
+                    <div className="space-y-2">
+                        <div className={`px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                            Utility
+                        </div>
+                        {utilityItems.map((item) => renderNavItem(item, pathname, isExpanded))}
+                    </div>
+                )}
             </div>
 
             <div className="px-2 py-4 border-t border-border">
@@ -282,6 +307,38 @@ const SidebarContent = ({
                 </div>
             </div>
         </div>
+    );
+};
+
+const renderNavItem = (item: { name: any; icon: any; href: any; category?: string; }, pathname: string, isExpanded: boolean) => {
+    const isActive = pathname === item.href;
+    return (
+        <Link
+            key={item.name}
+            href={item.href}
+            className={`flex items-center px-2 py-3 rounded-lg transition-all duration-200
+                ${isActive
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                }
+                group/item relative
+            `}
+        >
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                    <div className="shrink-0">
+                        {item.icon}
+                    </div>
+                    <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
+                        ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                        {item.name}
+                    </span>
+                </div>
+                <ChevronRight className={`w-4 h-4 transition-opacity duration-300
+                    ${isExpanded || isActive ? 'opacity-100' : 'opacity-0'}`}
+                />
+            </div>
+        </Link>
     );
 };
 

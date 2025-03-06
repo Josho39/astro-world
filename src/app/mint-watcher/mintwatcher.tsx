@@ -111,19 +111,19 @@ const HolderDistributionChart = ({ holders }: { holders: NFTHolder[] }) => {
     );
 };
 
-const Pagination = ({ 
-    totalItems, 
-    itemsPerPage, 
-    currentPage, 
-    onPageChange 
-}: { 
+const Pagination = ({
+    totalItems,
+    itemsPerPage,
+    currentPage,
+    onPageChange
+}: {
     totalItems: number;
     itemsPerPage: number;
     currentPage: number;
     onPageChange: (page: number) => void;
 }) => {
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-    
+
     const goToPage = (page: number) => {
         const validPage = Math.max(1, Math.min(page, totalPages));
         onPageChange(validPage);
@@ -132,77 +132,77 @@ const Pagination = ({
     const renderPageNumbers = () => {
         const pages = [];
         const maxPageButtons = 5;
-        
+
         let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
         let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
-        
+
         if (endPage - startPage + 1 < maxPageButtons) {
             startPage = Math.max(1, endPage - maxPageButtons + 1);
         }
-        
+
         if (startPage > 1) {
             pages.push(
-                <Button 
-                    key="first" 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-10 h-9" 
+                <Button
+                    key="first"
+                    variant="outline"
+                    size="sm"
+                    className="w-10 h-9"
                     onClick={() => goToPage(1)}
                 >
                     1
                 </Button>
             );
-            
+
             if (startPage > 2) {
                 pages.push(<span key="ellipsis1" className="px-2">...</span>);
             }
         }
-        
+
         for (let i = startPage; i <= endPage; i++) {
             pages.push(
-                <Button 
-                    key={i} 
-                    variant={i === currentPage ? "default" : "outline"} 
-                    size="sm" 
-                    className="w-10 h-9" 
+                <Button
+                    key={i}
+                    variant={i === currentPage ? "default" : "outline"}
+                    size="sm"
+                    className="w-10 h-9"
                     onClick={() => goToPage(i)}
                 >
                     {i}
                 </Button>
             );
         }
-        
+
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
                 pages.push(<span key="ellipsis2" className="px-2">...</span>);
             }
-            
+
             pages.push(
-                <Button 
-                    key="last" 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-10 h-9" 
+                <Button
+                    key="last"
+                    variant="outline"
+                    size="sm"
+                    className="w-10 h-9"
                     onClick={() => goToPage(totalPages)}
                 >
                     {totalPages}
                 </Button>
             );
         }
-        
+
         return pages;
     };
-    
+
     return (
         <div className="flex items-center justify-between mt-4 px-1">
             <div className="text-sm text-muted-foreground">
                 Showing {Math.min(totalItems, (currentPage - 1) * itemsPerPage + 1)} to {Math.min(totalItems, currentPage * itemsPerPage)} of {totalItems} items
             </div>
             <div className="flex items-center space-x-2">
-                <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => goToPage(currentPage - 1)} 
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="h-9 w-9"
                 >
@@ -211,10 +211,10 @@ const Pagination = ({
                 <div className="flex items-center">
                     {renderPageNumbers()}
                 </div>
-                <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => goToPage(currentPage + 1)} 
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage >= totalPages}
                     className="h-9 w-9"
                 >
@@ -246,7 +246,6 @@ const MintWatcher = () => {
     const [currentCollectionsPage, setCurrentCollectionsPage] = useState(1);
     const [collectionsPerPage, setCollectionsPerPage] = useState(50);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    
     const savedViewMode = typeof localStorage !== 'undefined' ? localStorage.getItem('nftViewMode') : null;
 
     useEffect(() => {
@@ -254,12 +253,12 @@ const MintWatcher = () => {
         if (savedWatches) {
             setWatchedCollections(new Set(JSON.parse(savedWatches)));
         }
-        
+
         const savedSelectedCollection = localStorage.getItem('nftSelectedCollection');
         if (savedSelectedCollection) {
             setSelectedCollection(savedSelectedCollection);
         }
-        
+
         if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
             setViewMode(savedViewMode as 'grid' | 'list');
         }
@@ -272,7 +271,7 @@ const MintWatcher = () => {
 
         fetchData();
     }, []);
-    
+
     useEffect(() => {
         if (selectedCollection && activeTab === 'holders') {
             fetchHolderData(selectedCollection);
@@ -482,7 +481,7 @@ const MintWatcher = () => {
         if (e) {
             e.stopPropagation();
         }
-        
+
         const newWatched = new Set(watchedCollections);
 
         if (newWatched.has(tick)) {
@@ -535,11 +534,10 @@ const MintWatcher = () => {
         if (showWatchedOnly && !watchedCollections.has(mint.tick)) return false;
         return true;
     });
-    
+
     const indexOfLastMint = currentMintsPage * mintsPerPage;
     const indexOfFirstMint = indexOfLastMint - mintsPerPage;
     const currentMints = filteredMints.slice(indexOfFirstMint, indexOfLastMint);
-    
     const indexOfLastCollection = currentCollectionsPage * collectionsPerPage;
     const indexOfFirstCollection = indexOfLastCollection - collectionsPerPage;
     const currentCollections = filteredCollections.slice(indexOfFirstCollection, indexOfLastCollection);
@@ -559,7 +557,7 @@ const MintWatcher = () => {
     const handleCollectionClick = (tick: string) => {
         const newSelected = selectedCollection === tick ? null : tick;
         setSelectedCollection(newSelected);
-        
+
         if (newSelected) {
             localStorage.setItem('nftSelectedCollection', newSelected);
         } else {
@@ -586,7 +584,7 @@ const MintWatcher = () => {
         setShowWatchedOnly(!showWatchedOnly);
         setCurrentMintsPage(1);
     };
-    
+
     const toggleViewMode = () => {
         const newMode = viewMode === 'grid' ? 'list' : 'grid';
         setViewMode(newMode);
@@ -645,9 +643,9 @@ const MintWatcher = () => {
                                     </Button>
                                 ) : (
                                     <div className="flex items-center space-x-2">
-                                        <Switch 
-                                            id="watched-filter" 
-                                            checked={showWatchedOnly} 
+                                        <Switch
+                                            id="watched-filter"
+                                            checked={showWatchedOnly}
                                             onCheckedChange={toggleShowWatchedOnly}
                                         />
                                         <label htmlFor="watched-filter" className="text-sm font-medium cursor-pointer flex items-center">
@@ -656,29 +654,29 @@ const MintWatcher = () => {
                                         </label>
                                     </div>
                                 )}
-                                
+
                                 <Separator orientation="vertical" className="h-6 hidden sm:block" />
-                                
+
                                 <div className="flex items-center space-x-2">
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className={cn("p-1", viewMode === 'grid' ? "bg-muted" : "")} 
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={cn("p-1", viewMode === 'grid' ? "bg-muted" : "")}
                                         onClick={() => viewMode !== 'grid' && toggleViewMode()}
                                     >
                                         <LayoutGrid className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className={cn("p-1", viewMode === 'list' ? "bg-muted" : "")} 
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={cn("p-1", viewMode === 'list' ? "bg-muted" : "")}
                                         onClick={() => viewMode !== 'list' && toggleViewMode()}
                                     >
                                         <LayoutList className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
-                            
+
                             <div className="text-xs text-muted-foreground">
                                 {filteredMints.length} {filteredMints.length === 1 ? 'mint' : 'mints'} found
                             </div>
@@ -694,8 +692,8 @@ const MintWatcher = () => {
                                 <Info className="h-12 w-12 mx-auto mb-1 opacity-50" />
                                 <p className="text-lg font-medium">No recent mints found</p>
                                 <p className="text-sm mt-1 max-w-md mx-auto">
-                                    {showWatchedOnly ? 
-                                        "No mints for watched collections. Try disabling the filter or watch more collections." : 
+                                    {showWatchedOnly ?
+                                        "No mints for watched collections. Try disabling the filter or watch more collections." :
                                         "Try refreshing or check back later for updates on new mints."}
                                 </p>
                             </div>
@@ -733,7 +731,7 @@ const MintWatcher = () => {
                                                                     src={mint.thumbnail_url}
                                                                     alt={`${mint.tick} #${mint.id}`}
                                                                     className="w-full h-full object-cover"
-                                                                    />
+                                                                />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center">
                                                                     <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
@@ -742,7 +740,7 @@ const MintWatcher = () => {
                                                             <Badge className="absolute top-2 right-2 bg-background/90 text-foreground font-semibold">
                                                                 #{mint.id}
                                                             </Badge>
-                                                            
+
                                                             <Button
                                                                 variant={isWatched ? "default" : "outline"}
                                                                 size="sm"
@@ -823,16 +821,16 @@ const MintWatcher = () => {
                                         );
                                     })}
                                 </div>
-                                
+
                                 {filteredMints.length > mintsPerPage && (
-                                    <Pagination 
+                                    <Pagination
                                         totalItems={filteredMints.length}
                                         itemsPerPage={mintsPerPage}
                                         currentPage={currentMintsPage}
                                         onPageChange={setCurrentMintsPage}
                                     />
                                 )}
-                                
+
                                 <style jsx global>{`
                                   .backface-hidden {
                                     -webkit-backface-visibility: hidden;
@@ -860,9 +858,9 @@ const MintWatcher = () => {
                                             {currentMints.map((mint) => {
                                                 const isWatched = watchedCollections.has(mint.tick);
                                                 const isSelected = selectedCollection === mint.tick;
-                                                
+
                                                 return (
-                                                    <TableRow 
+                                                    <TableRow
                                                         key={`${mint.tick}-${mint.id}`}
                                                         className={cn(
                                                             isWatched ? 'bg-primary/5' : '',
@@ -926,9 +924,9 @@ const MintWatcher = () => {
                                         </TableBody>
                                     </Table>
                                 </div>
-                                
+
                                 {filteredMints.length > mintsPerPage && (
-                                    <Pagination 
+                                    <Pagination
                                         totalItems={filteredMints.length}
                                         itemsPerPage={mintsPerPage}
                                         currentPage={currentMintsPage}
@@ -1159,9 +1157,9 @@ const MintWatcher = () => {
                                         </Table>
                                     </div>
                                 </div>
-                                
+
                                 {filteredCollections.length > collectionsPerPage && (
-                                    <Pagination 
+                                    <Pagination
                                         totalItems={filteredCollections.length}
                                         itemsPerPage={collectionsPerPage}
                                         currentPage={currentCollectionsPage}
