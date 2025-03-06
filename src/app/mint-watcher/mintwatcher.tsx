@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Bell, RefreshCw, Search, Loader2, AlertCircle, Info, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Bell, RefreshCw, Search, Loader2, AlertCircle, Info, X, ChevronLeft, ChevronRight, LayoutGrid, LayoutList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import _ from 'lodash';
@@ -109,6 +111,120 @@ const HolderDistributionChart = ({ holders }: { holders: NFTHolder[] }) => {
     );
 };
 
+const Pagination = ({ 
+    totalItems, 
+    itemsPerPage, 
+    currentPage, 
+    onPageChange 
+}: { 
+    totalItems: number;
+    itemsPerPage: number;
+    currentPage: number;
+    onPageChange: (page: number) => void;
+}) => {
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    
+    const goToPage = (page: number) => {
+        const validPage = Math.max(1, Math.min(page, totalPages));
+        onPageChange(validPage);
+    };
+
+    const renderPageNumbers = () => {
+        const pages = [];
+        const maxPageButtons = 5;
+        
+        let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+        let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+        
+        if (endPage - startPage + 1 < maxPageButtons) {
+            startPage = Math.max(1, endPage - maxPageButtons + 1);
+        }
+        
+        if (startPage > 1) {
+            pages.push(
+                <Button 
+                    key="first" 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-10 h-9" 
+                    onClick={() => goToPage(1)}
+                >
+                    1
+                </Button>
+            );
+            
+            if (startPage > 2) {
+                pages.push(<span key="ellipsis1" className="px-2">...</span>);
+            }
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+                <Button 
+                    key={i} 
+                    variant={i === currentPage ? "default" : "outline"} 
+                    size="sm" 
+                    className="w-10 h-9" 
+                    onClick={() => goToPage(i)}
+                >
+                    {i}
+                </Button>
+            );
+        }
+        
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pages.push(<span key="ellipsis2" className="px-2">...</span>);
+            }
+            
+            pages.push(
+                <Button 
+                    key="last" 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-10 h-9" 
+                    onClick={() => goToPage(totalPages)}
+                >
+                    {totalPages}
+                </Button>
+            );
+        }
+        
+        return pages;
+    };
+    
+    return (
+        <div className="flex items-center justify-between mt-4 px-1">
+            <div className="text-sm text-muted-foreground">
+                Showing {Math.min(totalItems, (currentPage - 1) * itemsPerPage + 1)} to {Math.min(totalItems, currentPage * itemsPerPage)} of {totalItems} items
+            </div>
+            <div className="flex items-center space-x-2">
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => goToPage(currentPage - 1)} 
+                    disabled={currentPage === 1}
+                    className="h-9 w-9"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center">
+                    {renderPageNumbers()}
+                </div>
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => goToPage(currentPage + 1)} 
+                    disabled={currentPage >= totalPages}
+                    className="h-9 w-9"
+                >
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 const MintWatcher = () => {
     const [collections, setCollections] = useState<NFTCollection[]>([]);
     const [watchedCollections, setWatchedCollections] = useState<Set<string>>(new Set());
@@ -124,11 +240,28 @@ const MintWatcher = () => {
     const [activeTab, setActiveTab] = useState('recent-mints');
     const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
     const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+    const [showWatchedOnly, setShowWatchedOnly] = useState(false);
+    const [currentMintsPage, setCurrentMintsPage] = useState(1);
+    const [mintsPerPage, setMintsPerPage] = useState(120);
+    const [currentCollectionsPage, setCurrentCollectionsPage] = useState(1);
+    const [collectionsPerPage, setCollectionsPerPage] = useState(50);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    
+    const savedViewMode = typeof localStorage !== 'undefined' ? localStorage.getItem('nftViewMode') : null;
 
     useEffect(() => {
         const savedWatches = localStorage.getItem('nftWatchedCollections');
         if (savedWatches) {
             setWatchedCollections(new Set(JSON.parse(savedWatches)));
+        }
+        
+        const savedSelectedCollection = localStorage.getItem('nftSelectedCollection');
+        if (savedSelectedCollection) {
+            setSelectedCollection(savedSelectedCollection);
+        }
+        
+        if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
+            setViewMode(savedViewMode as 'grid' | 'list');
         }
 
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -139,6 +272,12 @@ const MintWatcher = () => {
 
         fetchData();
     }, []);
+    
+    useEffect(() => {
+        if (selectedCollection && activeTab === 'holders') {
+            fetchHolderData(selectedCollection);
+        }
+    }, [selectedCollection, activeTab]);
 
     const requestNotificationPermission = async () => {
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -339,7 +478,11 @@ const MintWatcher = () => {
         }
     };
 
-    const toggleWatch = (tick: string) => {
+    const toggleWatch = (tick: string, e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+        
         const newWatched = new Set(watchedCollections);
 
         if (newWatched.has(tick)) {
@@ -389,8 +532,17 @@ const MintWatcher = () => {
             if (!matchesTick && !matchesId) return false;
         }
         if (selectedCollection && mint.tick !== selectedCollection) return false;
+        if (showWatchedOnly && !watchedCollections.has(mint.tick)) return false;
         return true;
     });
+    
+    const indexOfLastMint = currentMintsPage * mintsPerPage;
+    const indexOfFirstMint = indexOfLastMint - mintsPerPage;
+    const currentMints = filteredMints.slice(indexOfFirstMint, indexOfLastMint);
+    
+    const indexOfLastCollection = currentCollectionsPage * collectionsPerPage;
+    const indexOfFirstCollection = indexOfLastCollection - collectionsPerPage;
+    const currentCollections = filteredCollections.slice(indexOfFirstCollection, indexOfLastCollection);
 
     const formatTimeAgo = (timestamp: string) => {
         const date = new Date(timestamp);
@@ -407,28 +559,44 @@ const MintWatcher = () => {
     const handleCollectionClick = (tick: string) => {
         const newSelected = selectedCollection === tick ? null : tick;
         setSelectedCollection(newSelected);
-
-        if (newSelected && activeTab === 'holders') {
-            fetchHolderData(newSelected);
+        
+        if (newSelected) {
+            localStorage.setItem('nftSelectedCollection', newSelected);
+        } else {
+            localStorage.removeItem('nftSelectedCollection');
         }
     };
 
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
-        if (tab === 'holders' && selectedCollection) {
-            fetchHolderData(selectedCollection);
+        if (tab === 'recent-mints') {
+            setCurrentMintsPage(1);
+        } else {
+            setCurrentCollectionsPage(1);
         }
     };
 
     const clearCollectionFilter = () => {
         setSelectedCollection(null);
         setHolderData(null);
+        localStorage.removeItem('nftSelectedCollection');
+    };
+
+    const toggleShowWatchedOnly = () => {
+        setShowWatchedOnly(!showWatchedOnly);
+        setCurrentMintsPage(1);
+    };
+    
+    const toggleViewMode = () => {
+        const newMode = viewMode === 'grid' ? 'list' : 'grid';
+        setViewMode(newMode);
+        localStorage.setItem('nftViewMode', newMode);
     };
 
     return (
         <Card className="w-full border">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 md:p-6 rounded-t-xl">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 md:p-6 rounded-t-xl">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
@@ -449,33 +617,72 @@ const MintWatcher = () => {
                         </Button>
                     </div>
 
-                    <div className="mt-3 flex justify-between items-center">
-                        <div className="relative w-64">
+                    <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div className="relative w-full sm:w-64">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-8 h-9 bg-background/80 border-primary/20"
+                                className="pl-8 h-9 bg-background/80 border-primary/20 w-full"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <TabsList className="grid grid-cols-2 w-48">
+                        <TabsList className="grid grid-cols-2 w-full sm:w-48">
                             <TabsTrigger value="recent-mints" className="rounded-l-md">Recent Mints</TabsTrigger>
                             <TabsTrigger value="holders" className="rounded-r-md">Holders</TabsTrigger>
                         </TabsList>
                     </div>
                 </div>
 
-                <div className="p-4">
-                    <TabsContent value="recent-mints" className="mt-0 space-y-4">
-                        {selectedCollection && (
-                            <div className="flex justify-between items-center mb-2">
-                                <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
-                                    View All Collections
-                                </Button>
+                <div className="mt-2 p-3 md:p-4">
+                    <TabsContent value="recent-mints" className="mt-2 space-y-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                            <div className="flex flex-wrap gap-2 items-center">
+                                {selectedCollection ? (
+                                    <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
+                                        View All Collections
+                                    </Button>
+                                ) : (
+                                    <div className="flex items-center space-x-2">
+                                        <Switch 
+                                            id="watched-filter" 
+                                            checked={showWatchedOnly} 
+                                            onCheckedChange={toggleShowWatchedOnly}
+                                        />
+                                        <label htmlFor="watched-filter" className="text-sm font-medium cursor-pointer flex items-center">
+                                            <Bell className="h-4 w-4 mr-1" />
+                                            Show watched only
+                                        </label>
+                                    </div>
+                                )}
+                                
+                                <Separator orientation="vertical" className="h-6 hidden sm:block" />
+                                
+                                <div className="flex items-center space-x-2">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className={cn("p-1", viewMode === 'grid' ? "bg-muted" : "")} 
+                                        onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                                    >
+                                        <LayoutGrid className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className={cn("p-1", viewMode === 'list' ? "bg-muted" : "")} 
+                                        onClick={() => viewMode !== 'list' && toggleViewMode()}
+                                    >
+                                        <LayoutList className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                        )}
+                            
+                            <div className="text-xs text-muted-foreground">
+                                {filteredMints.length} {filteredMints.length === 1 ? 'mint' : 'mints'} found
+                            </div>
+                        </div>
 
                         {isLoading ? (
                             <div className="text-center py-8 text-muted-foreground bg-card border rounded-xl flex flex-col items-center justify-center">
@@ -486,127 +693,253 @@ const MintWatcher = () => {
                             <div className="text-center py-6 text-muted-foreground bg-card border rounded-xl">
                                 <Info className="h-12 w-12 mx-auto mb-1 opacity-50" />
                                 <p className="text-lg font-medium">No recent mints found</p>
-                                <p className="text-sm mt-1 max-w-md mx-auto">Try refreshing or check back later for updates on new mints.</p>
+                                <p className="text-sm mt-1 max-w-md mx-auto">
+                                    {showWatchedOnly ? 
+                                        "No mints for watched collections. Try disabling the filter or watch more collections." : 
+                                        "Try refreshing or check back later for updates on new mints."}
+                                </p>
                             </div>
-                        ) : (
-                            <><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                        {filteredMints.map((mint, index) => {
-                                            const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
+                        ) : viewMode === 'grid' ? (
+                            <>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-5">
+                                    {currentMints.map((mint, index) => {
+                                        const isFlipped = flippedCards.has(`${mint.tick}-${mint.id}`);
+                                        const isWatched = watchedCollections.has(mint.tick);
+                                        const isSelected = selectedCollection === mint.tick;
 
-                                            return (
-                                                <div key={`${mint.tick}-${mint.id}-${index}`}
-                                                    className="relative min-h-[350px]"
+                                        return (
+                                            <div key={`${mint.tick}-${mint.id}-${index}`}
+                                                className={`relative min-h-[380px] ${isSelected ? 'ring-2 ring-primary rounded-lg' : ''}`}
+                                                style={{
+                                                    perspective: '1000px'
+                                                }}>
+                                                <div
+                                                    className={`w-full h-full transition-all duration-500 relative ${isFlipped ? 'rotate-y-180' : ''}`}
                                                     style={{
-                                                        perspective: '1000px'
-                                                    }}>
-                                                    <div
-                                                        className={`w-full h-full transition-all duration-500 relative ${isFlipped ? 'rotate-y-180' : ''}`}
+                                                        transformStyle: 'preserve-3d',
+                                                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                                    }}
+                                                >
+                                                    <Card
+                                                        className={`cursor-pointer absolute w-full h-full backface-hidden group border shadow-sm hover:shadow-md transition-shadow ${isSelected ? 'border-primary bg-primary/5' : ''}`}
                                                         style={{
-                                                            transformStyle: 'preserve-3d',
-                                                            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                                            backfaceVisibility: 'hidden',
                                                         }}
+                                                        onClick={() => toggleCardFlip(mint.tick, mint.id)}
                                                     >
-                                                        <Card
-                                                            className="cursor-pointer absolute w-full h-full backface-hidden group border shadow-sm hover:shadow-md transition-shadow"
-                                                            style={{
-                                                                backfaceVisibility: 'hidden',
-                                                            }}
-                                                            onClick={() => toggleCardFlip(mint.tick, mint.id)}
-                                                        >
-                                                            <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                                                        <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                                                            {mint.thumbnail_url ? (
+                                                                <img
+                                                                    src={mint.thumbnail_url}
+                                                                    alt={`${mint.tick} #${mint.id}`}
+                                                                    className="w-full h-full object-cover"
+                                                                    />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
+                                                                </div>
+                                                            )}
+                                                            <Badge className="absolute top-2 right-2 bg-background/90 text-foreground font-semibold">
+                                                                #{mint.id}
+                                                            </Badge>
+                                                            
+                                                            <Button
+                                                                variant={isWatched ? "default" : "outline"}
+                                                                size="sm"
+                                                                onClick={(e) => toggleWatch(mint.tick, e)}
+                                                                className={`absolute bottom-2 left-2 h-8 px-2 gap-1 flex items-center ${isWatched ? 'bg-primary text-primary-foreground' : 'bg-background/80'}`}
+                                                            >
+                                                                <Bell className="h-3.5 w-3.5 mr-1" />
+                                                                {isWatched ? 'Watched' : 'Watch'}
+                                                            </Button>
+                                                        </div>
+                                                        <div className="p-3 border-t bg-card">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <h3 className="font-bold text-base truncate">{mint.tick}</h3>
+                                                                <span className="text-xs bg-primary/10 text-primary rounded px-2 py-0.5 whitespace-nowrap">
+                                                                    {formatTimeAgo(mint.timestamp)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Click to view details
+                                                            </p>
+                                                        </div>
+                                                    </Card>
+
+                                                    <Card
+                                                        className={`cursor-pointer absolute w-full h-full backface-hidden group border shadow-sm hover:shadow-md transition-shadow ${isSelected ? 'border-primary bg-primary/5' : ''}`}
+                                                        style={{
+                                                            backfaceVisibility: 'hidden',
+                                                            transform: 'rotateY(180deg)'
+                                                        }}
+                                                        onClick={() => toggleCardFlip(mint.tick, mint.id)}
+                                                    >
+                                                        <div className="flex flex-col h-full">
+                                                            <div className="flex-1 aspect-square overflow-y-auto p-3">
+                                                                {mint.metadata ? (
+                                                                    <div>
+                                                                        {mint.metadata.name && (
+                                                                            <p className="font-medium text-foreground mb-2">{mint.metadata.name}</p>
+                                                                        )}
+
+                                                                        {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
+                                                                            <div className="grid grid-cols-2 gap-1 mt-1">
+                                                                                {mint.metadata.attributes.slice(0, 100).map((attr, idx) => (
+                                                                                    <div key={idx} className="bg-primary/5 p-1 rounded truncate">
+                                                                                        <span className="font-medium text-primary/70">{attr.trait_type}: </span>
+                                                                                        <span>{attr.value}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center h-full">
+                                                                        <Loader2 className="h-6 w-6 animate-spin" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="p-3 border-t bg-card mt-auto">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <h3 className="font-bold text-base truncate">{mint.tick}</h3>
+                                                                    <Badge className="bg-background/90 text-foreground font-semibold">
+                                                                        #{mint.id}
+                                                                    </Badge>
+                                                                </div>
+                                                                <Button
+                                                                    variant={isWatched ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    className="w-full h-8"
+                                                                    onClick={(e) => toggleWatch(mint.tick, e)}
+                                                                >
+                                                                    <Bell className="h-3.5 w-3.5 mr-1.5" />
+                                                                    {isWatched ? 'Watched' : 'Watch'}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </Card>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                
+                                {filteredMints.length > mintsPerPage && (
+                                    <Pagination 
+                                        totalItems={filteredMints.length}
+                                        itemsPerPage={mintsPerPage}
+                                        currentPage={currentMintsPage}
+                                        onPageChange={setCurrentMintsPage}
+                                    />
+                                )}
+                                
+                                <style jsx global>{`
+                                  .backface-hidden {
+                                    -webkit-backface-visibility: hidden;
+                                    backface-visibility: hidden;
+                                  }
+                                  .rotate-y-180 {
+                                    transform: rotateY(180deg);
+                                  }
+                                `}</style>
+                            </>
+                        ) : (
+                            <>
+                                <div className="border rounded-md overflow-hidden">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-12 text-center">Watch</TableHead>
+                                                <TableHead>Collection</TableHead>
+                                                <TableHead>ID</TableHead>
+                                                <TableHead>Preview</TableHead>
+                                                <TableHead>Time</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {currentMints.map((mint) => {
+                                                const isWatched = watchedCollections.has(mint.tick);
+                                                const isSelected = selectedCollection === mint.tick;
+                                                
+                                                return (
+                                                    <TableRow 
+                                                        key={`${mint.tick}-${mint.id}`}
+                                                        className={cn(
+                                                            isWatched ? 'bg-primary/5' : '',
+                                                            isSelected ? 'bg-primary/10 border-l-4 border-l-primary' : '',
+                                                            "hover:bg-secondary/10 cursor-pointer"
+                                                        )}
+                                                        onClick={() => handleCollectionClick(mint.tick)}
+                                                    >
+                                                        <TableCell className="p-2 text-center">
+                                                            <Button
+                                                                variant={isWatched ? "default" : "ghost"}
+                                                                size="icon"
+                                                                onClick={(e) => toggleWatch(mint.tick, e)}
+                                                                className={cn(
+                                                                    "h-8 w-8 relative",
+                                                                    isWatched ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                <Bell className="h-4 w-4" />
+                                                                {isWatched && (
+                                                                    <span className="absolute inset-0 rounded-full animate-ping bg-primary/30"></span>
+                                                                )}
+                                                            </Button>
+                                                        </TableCell>
+                                                        <TableCell className="font-medium">
+                                                            <div className="flex items-center">
+                                                                {mint.tick}
+                                                                {isSelected && (
+                                                                    <Badge className="ml-2 bg-primary/20 text-primary border-primary/40">Selected</Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge className="bg-background text-foreground font-semibold">
+                                                                #{mint.id}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="w-12 h-12 relative overflow-hidden rounded-md bg-muted">
                                                                 {mint.thumbnail_url ? (
                                                                     <img
                                                                         src={mint.thumbnail_url}
                                                                         alt={`${mint.tick} #${mint.id}`}
                                                                         className="w-full h-full object-cover"
-                                                                        onError={(e) => {
-                                                                            (e.target as HTMLImageElement).src = "/placeholder-nft.png";
-                                                                        } } />
+                                                                    />
                                                                 ) : (
                                                                     <div className="w-full h-full flex items-center justify-center">
-                                                                        <span className="text-muted-foreground">{mint.tick} #{mint.id}</span>
+                                                                        <span className="text-xs text-muted-foreground">No img</span>
                                                                     </div>
                                                                 )}
-                                                                <Badge className="absolute top-2 right-2 bg-background/90 text-foreground font-semibold">
-                                                                    #{mint.id}
-                                                                </Badge>
                                                             </div>
-                                                            <div className="p-3 border-t bg-card">
-                                                                <div className="flex items-center justify-between mb-1">
-                                                                    <h3 className="font-bold text-base truncate">{mint.tick}</h3>
-                                                                    <span className="text-xs bg-primary/10 text-primary rounded px-2 py-0.5 whitespace-nowrap">
-                                                                        {formatTimeAgo(mint.timestamp)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    Click to view details
-                                                                </p>
-                                                            </div>
-                                                        </Card>
-
-                                                        <Card
-                                                            className="cursor-pointer absolute w-full h-full backface-hidden group border shadow-sm hover:shadow-md transition-shadow"
-                                                            style={{
-                                                                backfaceVisibility: 'hidden',
-                                                                transform: 'rotateY(180deg)'
-                                                            }}
-                                                            onClick={() => toggleCardFlip(mint.tick, mint.id)}
-                                                        >
-                                                            <div className="flex flex-col h-full">
-                                                                <div className="flex-1 aspect-square overflow-y-auto p-3">
-                                                                    {mint.metadata ? (
-                                                                        <div>
-                                                                            {mint.metadata.name && (
-                                                                                <p className="font-medium text-foreground mb-2">{mint.metadata.name}</p>
-                                                                            )}
-
-                                                                            {mint.metadata.attributes && mint.metadata.attributes.length > 0 && (
-                                                                                <div className="grid grid-cols-2 gap-1 mt-1">
-                                                                                    {mint.metadata.attributes.slice(0, 100).map((attr, idx) => (
-                                                                                        <div key={idx} className="bg-primary/5 p-1 rounded truncate">
-                                                                                            <span className="font-medium text-primary/70">{attr.trait_type}: </span>
-                                                                                            <span>{attr.value}</span>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="flex items-center justify-center h-full">
-                                                                            <Loader2 className="h-6 w-6 animate-spin" />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="p-3 border-t bg-card mt-auto">
-                                                                    <div className="flex items-center justify-between mb-1">
-                                                                        <h3 className="font-bold text-base truncate">{mint.tick}</h3>
-                                                                        <Badge className="bg-background/90 text-foreground font-semibold">
-                                                                            #{mint.id}
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        Click to flip back
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </Card>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div><style jsx global>{`
-                              .backface-hidden {
-                                -webkit-backface-visibility: hidden;
-                                backface-visibility: hidden;
-                              }
-                              .rotate-y-180 {
-                                transform: rotateY(180deg);
-                              }
-                            `}</style></>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <span className="text-xs bg-primary/10 text-primary rounded px-2 py-1 whitespace-nowrap">
+                                                                {formatTimeAgo(mint.timestamp)}
+                                                            </span>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                
+                                {filteredMints.length > mintsPerPage && (
+                                    <Pagination 
+                                        totalItems={filteredMints.length}
+                                        itemsPerPage={mintsPerPage}
+                                        currentPage={currentMintsPage}
+                                        onPageChange={setCurrentMintsPage}
+                                    />
+                                )}
+                            </>
                         )}
                     </TabsContent>
 
-                    <TabsContent value="holders" className="mt-0 space-y-4">
+                    <TabsContent value="holders" className="mt-2 space-y-4">
                         {selectedCollection && holderData ? (
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center mb-2">
@@ -658,7 +991,7 @@ const MintWatcher = () => {
                                             Showing {holderData.holders.length} holders for {selectedCollection}
                                         </p>
                                     </div>
-                                    <div className="overflow-x-auto max-h-64">
+                                    <div className="overflow-x-auto max-h-80">
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
@@ -702,110 +1035,139 @@ const MintWatcher = () => {
                                 </div>
 
                                 <div className="border rounded-md overflow-hidden">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-12"></TableHead>
-                                                <TableHead>Collection</TableHead>
-                                                <TableHead className="text-right">Minted</TableHead>
-                                                <TableHead className="text-right">Total Supply</TableHead>
-                                                <TableHead className="text-right">Progress</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {isLoading ? (
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
                                                 <TableRow>
-                                                    <TableCell colSpan={5} className="h-24 text-center">
-                                                        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                                                        <span className="block mt-1 text-sm text-muted-foreground">Loading collections...</span>
-                                                    </TableCell>
+                                                    <TableHead className="w-12 text-center">Watch</TableHead>
+                                                    <TableHead>Collection</TableHead>
+                                                    <TableHead className="text-right">Progress</TableHead>
+                                                    <TableHead className="text-right">Minted</TableHead>
+                                                    <TableHead className="text-right">Pre-minted</TableHead>
+                                                    <TableHead className="text-right">Total Supply</TableHead>
                                                 </TableRow>
-                                            ) : filteredCollections.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="h-24 text-center">
-                                                        <span className="text-muted-foreground">
-                                                            {searchQuery ? 'No matching collections found' : 'No collections found'}
-                                                        </span>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : (
-                                                filteredCollections.map(collection => {
-                                                    const mintPercentage = collection.total_supply
-                                                        ? Math.round((collection.minted_count / collection.total_supply) * 100)
-                                                        : 0;
-                                                    const progressBarColor = getProgressBarColor(mintPercentage);
+                                            </TableHeader>
+                                            <TableBody>
+                                                {isLoading ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} className="h-24 text-center">
+                                                            <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                                                            <span className="block mt-1 text-sm text-muted-foreground">Loading collections...</span>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : currentCollections.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} className="h-24 text-center">
+                                                            <span className="text-muted-foreground">
+                                                                {searchQuery ? 'No matching collections found' : 'No collections found'}
+                                                            </span>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    currentCollections.map(collection => {
+                                                        const mintPercentage = collection.total_supply
+                                                            ? Math.round((collection.minted_count / collection.total_supply) * 100)
+                                                            : 0;
+                                                        const progressBarColor = getProgressBarColor(mintPercentage);
+                                                        const premintedCount = collection.total_supply && collection.minted_count
+                                                            ? collection.total_supply - collection.minted_count
+                                                            : 0;
+                                                        const isSelected = selectedCollection === collection.tick;
+                                                        const isWatched = collection.watched;
 
-                                                    return (
-                                                        <TableRow
-                                                            key={collection.tick}
-                                                            className={cn(
-                                                                collection.watched ? 'bg-primary/5' : '',
-                                                                selectedCollection === collection.tick ? 'bg-secondary/30' : '',
-                                                                "cursor-pointer hover:bg-secondary/10"
-                                                            )}
-                                                            onClick={() => {
-                                                                handleCollectionClick(collection.tick);
-                                                                fetchHolderData(collection.tick);
-                                                            }}
-                                                        >
-                                                            <TableCell className="p-2 text-center">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        toggleWatch(collection.tick);
-                                                                    }}
-                                                                    className={cn(
-                                                                        "h-8 w-8",
-                                                                        collection.watched ? "text-primary" : "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    <Bell className="h-4 w-4" />
-                                                                </Button>
-                                                            </TableCell>
-                                                            <TableCell className="font-medium">{collection.tick}</TableCell>
-                                                            <TableCell className="text-right">{collection.minted_count.toLocaleString()}</TableCell>
-                                                            <TableCell className="text-right">
-                                                                {collection.total_supply
-                                                                    ? collection.total_supply.toLocaleString()
-                                                                    : 'Unknown'}
-                                                            </TableCell>
-                                                            <TableCell className="text-right">
-                                                                {collection.total_supply ? (
-                                                                    <TooltipProvider>
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                <div className="flex items-center justify-end">
-                                                                                    <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                                                                                        <div
-                                                                                            className={`h-full ${progressBarColor} rounded-full`}
-                                                                                            style={{
-                                                                                                width: `${mintPercentage}%`
-                                                                                            }}
-                                                                                        />
-                                                                                    </div>
-                                                                                </div>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>
-                                                                                <p className="font-bold">{mintPercentage}% minted</p>
-                                                                                <p className="text-xs">
-                                                                                    {collection.minted_count.toLocaleString()} of {collection.total_supply.toLocaleString()}
-                                                                                </p>
-                                                                            </TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
-                                                                ) : (
-                                                                    <span className="text-xs text-muted-foreground">-</span>
+                                                        return (
+                                                            <TableRow
+                                                                key={collection.tick}
+                                                                className={cn(
+                                                                    isWatched ? 'bg-primary/5' : '',
+                                                                    isSelected ? 'bg-primary/10 border-l-4 border-l-primary' : '',
+                                                                    "cursor-pointer hover:bg-secondary/10"
                                                                 )}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })
-                                            )}
-                                        </TableBody>
-                                    </Table>
+                                                                onClick={() => {
+                                                                    handleCollectionClick(collection.tick);
+                                                                }}
+                                                            >
+                                                                <TableCell className="p-2 text-center">
+                                                                    <Button
+                                                                        variant={isWatched ? "default" : "ghost"}
+                                                                        size="icon"
+                                                                        onClick={(e) => toggleWatch(collection.tick, e)}
+                                                                        className={cn(
+                                                                            "h-8 w-8 relative",
+                                                                            isWatched ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                                                                        )}
+                                                                    >
+                                                                        <Bell className="h-4 w-4" />
+                                                                        {isWatched && (
+                                                                            <span className="absolute inset-0 rounded-full animate-ping bg-primary/30"></span>
+                                                                        )}
+                                                                    </Button>
+                                                                </TableCell>
+                                                                <TableCell className="font-medium">
+                                                                    <div className="flex items-center">
+                                                                        {collection.tick}
+                                                                        {isSelected && (
+                                                                            <Badge className="ml-2 bg-primary/20 text-primary border-primary/40">Selected</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    {collection.total_supply ? (
+                                                                        <TooltipProvider>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <div className="flex items-center justify-end">
+                                                                                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                                                                            <div
+                                                                                                className={`h-full ${progressBarColor} rounded-full`}
+                                                                                                style={{
+                                                                                                    width: `${mintPercentage}%`
+                                                                                                }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        <span className="ml-2 text-xs font-medium">{mintPercentage}%</span>
+                                                                                    </div>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    <p className="font-bold">{mintPercentage}% minted</p>
+                                                                                    <p className="text-xs">
+                                                                                        {collection.minted_count.toLocaleString()} of {collection.total_supply.toLocaleString()}
+                                                                                    </p>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+                                                                    ) : (
+                                                                        <span className="text-xs text-muted-foreground">-</span>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-right font-medium">{collection.minted_count.toLocaleString()}</TableCell>
+                                                                <TableCell className="text-right">
+                                                                    {collection.total_supply
+                                                                        ? premintedCount.toLocaleString()
+                                                                        : 'Unknown'}
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    {collection.total_supply
+                                                                        ? collection.total_supply.toLocaleString()
+                                                                        : 'Unknown'}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 </div>
+                                
+                                {filteredCollections.length > collectionsPerPage && (
+                                    <Pagination 
+                                        totalItems={filteredCollections.length}
+                                        itemsPerPage={collectionsPerPage}
+                                        currentPage={currentCollectionsPage}
+                                        onPageChange={setCurrentCollectionsPage}
+                                    />
+                                )}
                             </div>
                         )}
                     </TabsContent>
@@ -820,9 +1182,9 @@ const MintWatcher = () => {
                             Would you like to receive notifications when new NFTs are minted for collections you're watching?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>No Thanks</AlertDialogCancel>
-                        <AlertDialogAction onClick={requestNotificationPermission}>
+                    <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                        <AlertDialogCancel className="w-full sm:w-auto mt-0">No Thanks</AlertDialogCancel>
+                        <AlertDialogAction className="w-full sm:w-auto" onClick={requestNotificationPermission}>
                             Enable Notifications
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -830,7 +1192,7 @@ const MintWatcher = () => {
             </AlertDialog>
 
             {error && (
-                <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground p-4 rounded-lg shadow-lg flex items-center gap-2 max-w-md">
+                <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground p-4 rounded-lg shadow-lg flex items-center gap-2 max-w-md z-50">
                     <AlertCircle className="h-5 w-5" />
                     <div>
                         <p className="font-semibold">Error</p>

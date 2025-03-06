@@ -62,14 +62,13 @@ const NavBar = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { walletConnected, walletInfo, connectWallet, disconnectWallet } = useWallet();
-    
-    // Track if we're on desktop
+
     const [isDesktop, setIsDesktop] = useState(false);
+    const navRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        // Initialize desktop state on component mount
         setIsDesktop(window.innerWidth >= 768);
-        
+
         const handleResize = () => {
             const desktop = window.innerWidth >= 768;
             setIsDesktop(desktop);
@@ -97,21 +96,6 @@ const NavBar = () => {
         };
     }, [isMobileOpen]);
 
-    useEffect(() => {
-        if (!isDesktop) return;
-        
-        const handleMouseMove = (e: MouseEvent) => {
-            if (e.clientX <= 60) {
-                setIsExpanded(true);
-            } else if (e.clientX > 260 || (e.clientX > 70 && !isExpanded)) {
-                setIsExpanded(false);
-            }
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        return () => document.removeEventListener('mousemove', handleMouseMove);
-    }, [isDesktop, isExpanded]);
-
     const handleWalletClick = async () => {
         if (walletConnected) {
             await disconnectWallet();
@@ -131,6 +115,10 @@ const NavBar = () => {
         </Button>
     );
 
+    const toggleExpanded = () => {
+        setIsExpanded(!isExpanded);
+    };
+
     return (
         <>
             <MobileMenuButton />
@@ -142,11 +130,14 @@ const NavBar = () => {
                 />
             )}
 
-            <div className="fixed top-0 left-0 h-full z-50">
+            <div className="fixed top-0 left-0 h-full z-50" ref={navRef}>
+                {/* Desktop sidebar */}
                 <nav
-                    className={`hidden md:flex h-full bg-background border-r border-border text-foreground transition-all duration-300 ease-in-out
-                        ${isExpanded ? 'w-64' : 'w-16'} 
-                        group/nav relative`}
+                    className={`hidden md:flex h-full bg-background border-r border-border text-foreground 
+                        transition-all duration-300 ease-in-out 
+                        hover:w-64 ${isExpanded ? 'w-64' : 'w-16'}`}
+                    onMouseEnter={() => setIsExpanded(true)}
+                    onMouseLeave={() => setIsExpanded(false)}
                 >
                     <SidebarContent
                         isExpanded={isExpanded}
@@ -154,9 +145,11 @@ const NavBar = () => {
                         walletConnected={walletConnected}
                         walletInfo={walletInfo}
                         handleWalletClick={handleWalletClick}
+                        toggleMenu={toggleExpanded}
                     />
                 </nav>
 
+                {/* Mobile sidebar */}
                 <nav
                     className={`md:hidden fixed top-0 left-0 h-full w-64 bg-background border-r border-border text-foreground
                         transform transition-transform duration-300 ease-in-out z-50
@@ -168,6 +161,7 @@ const NavBar = () => {
                         walletConnected={walletConnected}
                         walletInfo={walletInfo}
                         handleWalletClick={handleWalletClick}
+                        toggleMenu={() => { }}
                     />
                 </nav>
             </div>
@@ -181,6 +175,7 @@ interface SidebarContentProps {
     walletConnected: boolean;
     walletInfo: { balance: number; address: string } | null;
     handleWalletClick: () => void;
+    toggleMenu: () => void;
 }
 
 const SidebarContent = ({
@@ -188,10 +183,20 @@ const SidebarContent = ({
     pathname,
     walletConnected,
     walletInfo,
-    handleWalletClick
+    handleWalletClick,
+    toggleMenu
 }: SidebarContentProps) => {
     return (
-        <div className="flex flex-col h-full w-full">
+        <div className="flex flex-col h-full w-full overflow-hidden">
+            <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-2 p-1 h-6 w-6 rounded-l-none"
+                onClick={toggleMenu}
+            >
+                <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+            </Button>
+
             <div className="h-16 px-4 flex items-center justify-center md:justify-start mt-4 md:mt-0">
                 <div className="flex items-center space-x-2 overflow-hidden">
                     <div className="relative w-8 h-8 shrink-0">
@@ -213,7 +218,7 @@ const SidebarContent = ({
                 <ThemeToggle />
             </div>
 
-            <div className="flex-1 px-2 py-4 space-y-2">
+            <div className="flex-1 px-2 py-4 space-y-2 overflow-hidden">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (

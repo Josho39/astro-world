@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const tick = searchParams.get('tick');
-    const limit = searchParams.get('limit') || '1000';
+    const limit = searchParams.get('limit') || '5000';
     
     const url = new URL('/api/mints', BASE_API_URL);
     if (tick) url.searchParams.append('tick', tick);
