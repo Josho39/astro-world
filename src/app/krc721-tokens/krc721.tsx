@@ -91,6 +91,7 @@ const CollectionItem = ({
   return (
     <motion.div
       whileHover={{ y: -5, boxShadow: "0 8px 30px -15px rgba(0, 0, 0, 0.2)" }}
+      whileTap={{ scale: 0.98 }}
       className={`border rounded-xl overflow-hidden transition-colors duration-300 cursor-pointer
       ${isSelected ? 'border-primary shadow-md bg-primary/5' : 'hover:border-primary/50'}`}
       onClick={onClick}
@@ -115,6 +116,13 @@ const CollectionItem = ({
       <div className="p-2">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-lg truncate">{collection.tick}</h3>
+          {!isMobile && collection.change_24h !== undefined && (
+            <Badge className={`${getColorClass(collection.change_24h)} bg-background`}>
+              {collection.change_24h > 0 && <ArrowUpRight className="inline w-3 h-3 mr-1" />}
+              {collection.change_24h < 0 && <ArrowDownRight className="inline w-3 h-3 mr-1" />}
+              {formatChange(collection.change_24h)}
+            </Badge>
+          )}
         </div>
 
         {collection.total_supply && (
@@ -123,7 +131,7 @@ const CollectionItem = ({
               <span className="text-muted-foreground">Mint Progress</span>
               <span>{collection.minted_count || 0}/{collection.total_supply}</span>
             </div>
-            <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full ${getProgressColorClass(mintPercentage)} rounded-full`}
                 style={{ width: `${mintPercentage}%` }}
@@ -408,7 +416,10 @@ const KRC721Explorer = () => {
 
   const getCardsPerPage = () => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth < 768 ? 4 : 6;
+      if (window.innerWidth < 640) return 2; 
+      if (window.innerWidth < 768) return 4; 
+      if (window.innerWidth < 1024) return 4; 
+      return 6; 
     }
     return 6;
   };
@@ -421,12 +432,17 @@ const KRC721Explorer = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      setCardsPerPage(getCardsPerPage());
+      const newCardsPerPage = getCardsPerPage();
+      setCardsPerPage(newCardsPerPage);
+
+      if (cardsStartIndex + newCardsPerPage > filteredCards.length) {
+        setCardsStartIndex(Math.max(0, filteredCards.length - newCardsPerPage));
+      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [cardsStartIndex, filteredCards.length]);
 
   const fetchMarketData = async () => {
     try {
@@ -590,10 +606,13 @@ const KRC721Explorer = () => {
   };
 
   const handleSwipe = (event: any, info: any) => {
-    if (info.offset.x < -50 && cardsStartIndex + cardsPerPage < filteredCards.length) {
+    const swipeThreshold = window.innerWidth < 768 ? 30 : 50;
+    const velocity = Math.abs(info.velocity.x);
+    
+    if ((info.offset.x < -swipeThreshold || velocity > 0.5) && cardsStartIndex + cardsPerPage < filteredCards.length) {
       setSlideDirection('right');
       slideCards('right');
-    } else if (info.offset.x > 50 && cardsStartIndex > 0) {
+    } else if ((info.offset.x > swipeThreshold || velocity > 0.5) && cardsStartIndex > 0) {
       setSlideDirection('left');
       slideCards('left');
     }
@@ -603,12 +622,16 @@ const KRC721Explorer = () => {
     setSlideDirection(direction);
 
     const isMobile = window.innerWidth < 768;
-    const moveCount = isMobile ? 2 : cardsPerPage;
+    const moveCount = isMobile ? 1 : cardsPerPage;
 
     if (direction === 'left') {
       setCardsStartIndex(prev => Math.max(0, prev - moveCount));
     } else {
       setCardsStartIndex(prev => Math.min(filteredCards.length - moveCount, prev + moveCount));
+    }
+    
+    if (isMobile && navigator.vibrate) {
+      navigator.vibrate(10); 
     }
   };
 
@@ -752,7 +775,7 @@ const KRC721Explorer = () => {
                         size="icon"
                         onClick={() => slideCards('left')}
                         disabled={cardsStartIndex === 0}
-                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 bg-background/80 backdrop-blur-sm text-foreground"
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 active:scale-95 bg-background/80 backdrop-blur-sm text-foreground"
                       >
                         <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
@@ -761,17 +784,33 @@ const KRC721Explorer = () => {
                         size="icon"
                         onClick={() => slideCards('right')}
                         disabled={cardsStartIndex + cardsPerPage >= filteredCards.length}
-                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 bg-background/80 backdrop-blur-sm text-foreground"
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 active:scale-95 bg-background/80 backdrop-blur-sm text-foreground"
                       >
                         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                     </div>
 
+                    {/* Mobile swipe indicators */}
+                    {window.innerWidth < 768 && (
+                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none px-2 z-0 opacity-70">
+                        {cardsStartIndex > 0 && (
+                          <div className="bg-background/40 backdrop-blur-sm rounded-full p-1 shadow-sm">
+                            <ChevronLeft className="w-4 h-4 text-foreground" />
+                          </div>
+                        )}
+                        {cardsStartIndex + cardsPerPage < filteredCards.length && (
+                          <div className="bg-background/40 backdrop-blur-sm rounded-full p-1 shadow-sm ml-auto">
+                            <ChevronRight className="w-4 h-4 text-foreground" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     {/* Slider Content */}
                     <div className="overflow-hidden py-2" ref={sliderRef}>
                       <AnimatePresence initial={false} mode="popLayout">
                         <motion.div
-                          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 w-full"
+                          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 w-full touch-pan-x"
                           key={cardsStartIndex}
                           initial={{ 
                             opacity: 0, 
@@ -787,9 +826,6 @@ const KRC721Explorer = () => {
                             transition: { duration: 0.3 }
                           }}
                           transition={{ 
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 30,
                             opacity: { duration: 0.2 }
                           }}
                         >
