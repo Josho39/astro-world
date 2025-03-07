@@ -54,7 +54,6 @@ const KRC721Explorer = () => {
     const fetchCollections = async () => {
       try {
         setLoading(true);
-        
         const marketResponse = await fetch('https://markets.krc20.stream/krc721/mainnet/markets');
         if (!marketResponse.ok) {
           throw new Error('Failed to fetch market data');
@@ -397,7 +396,6 @@ const KRC721Explorer = () => {
             <div className="mb-8">
               <div className="overflow-hidden relative">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-bold">Featured Collections</h2>
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => scrollHorizontally('left')}
