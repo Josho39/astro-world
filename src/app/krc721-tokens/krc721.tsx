@@ -3,21 +3,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ChevronLeft, ChevronRight, Search, BarChart3,
-  ArrowUpRight, ArrowDownRight, RefreshCw,
-  Filter, SlidersHorizontal, Clock, AlertCircle, Loader2
-} from 'lucide-react';
-import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell
-} from "@/components/ui/table";
+import { ChevronLeft, ChevronRight, Search, BarChart3, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NFTCollection {
   tick: string;
@@ -29,7 +21,6 @@ interface NFTCollection {
   minted_count?: number;
   minted_percentage?: number;
   thumbnail_url?: string;
-  deployer?: string;
   buri?: string;
   royaltyFee?: string;
   premint?: number;
@@ -45,7 +36,6 @@ interface NFTToken {
 
 interface NFTMetadata {
   name?: string;
-  description?: string;
   image?: string;
   attributes?: { trait_type: string; value: string }[];
 }
@@ -96,6 +86,8 @@ const CollectionItem = ({
       ? (collection.minted_count / collection.total_supply) * 100
       : 0);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   return (
     <motion.div
       whileHover={{ y: -5, boxShadow: "0 8px 30px -15px rgba(0, 0, 0, 0.2)" }}
@@ -120,10 +112,10 @@ const CollectionItem = ({
           </div>
         )}
       </div>
-      <div className="p-4">
+      <div className="p-2">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-lg truncate">{collection.tick}</h3>
-          {collection.change_24h !== undefined && (
+          {!isMobile && collection.change_24h !== undefined && (
             <Badge className={`${getColorClass(collection.change_24h)} bg-background`}>
               {collection.change_24h > 0 && <ArrowUpRight className="inline w-3 h-3 mr-1" />}
               {collection.change_24h < 0 && <ArrowDownRight className="inline w-3 h-3 mr-1" />}
@@ -132,24 +124,13 @@ const CollectionItem = ({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-sm mb-2">
-          <div>
-            <p className="text-muted-foreground">Floor</p>
-            <p className="font-medium">{collection.floor_price ? `${collection.floor_price} KAS` : '-'}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Vol 24h</p>
-            <p className="font-medium">{collection.volume_24h ? formatNumber(collection.volume_24h) : '-'}</p>
-          </div>
-        </div>
-
         {collection.total_supply && (
-          <div className="space-y-1">
+          <div className="space-y-3">
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Mint Progress</span>
-              <span>{Math.round(mintPercentage)}%</span>
+              <span>{collection.minted_count || 0}/{collection.total_supply}</span>
             </div>
-            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full ${getProgressColorClass(mintPercentage)} rounded-full`}
                 style={{ width: `${mintPercentage}%` }}
@@ -181,128 +162,134 @@ const CollectionTable = ({
   onPageChange: (page: number) => void,
   totalPages: number
 }) => {
-  return (
-    <div>
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Collection</TableHead>
-              <TableHead className="text-right">Floor Price</TableHead>
-              <TableHead className="text-right">Volume 24h</TableHead>
-              <TableHead className="text-right">Total Volume</TableHead>
-              <TableHead className="text-right">Minted</TableHead>
-              <TableHead className="text-right">Change 24h</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array(pageSize).fill(0).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                </TableRow>
-              ))
-            ) : collections.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                  No collections found
-                </TableCell>
-              </TableRow>
-            ) : (
-              collections.map((collection) => {
-                const isSelected = selectedCollection === collection.tick;
-                const mintPercentage = collection.minted_percentage ||
-                  (collection.total_supply && collection.minted_count
-                    ? (collection.minted_count / collection.total_supply) * 100
-                    : 0);
+  const firstHalf = collections.slice(0, 5);
+  const secondHalf = collections.slice(5, 10);
 
-                return (
-                  <TableRow
-                    key={collection.tick}
-                    className={`cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
-                    onClick={() => onSelectCollection(collection.tick)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                          {collection.thumbnail_url ? (
-                            <img
-                              src={collection.thumbnail_url}
-                              alt={collection.tick}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                              <span className="text-xs font-medium text-primary/60">{collection.tick.substring(0, 2)}</span>
-                            </div>
-                          )}
-                        </div>
-                        <span className="font-medium">{collection.tick}</span>
-                        {isSelected && (
-                          <Badge variant="outline" className="ml-2 border-primary text-primary text-xs">Selected</Badge>
+  const renderTable = (data: NFTCollection[]) => (
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[200px]">Collection</TableHead>
+            <TableHead className="text-right">Floor Price</TableHead>
+            <TableHead className="text-right">Total Volume</TableHead>
+            <TableHead className="text-left">Minted</TableHead>
+            <TableHead className="text-right">Change 24h</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array(5).fill(0).map((_, index) => (
+              <TableRow key={`skeleton-${index}`}>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+              </TableRow>
+            ))
+          ) : data.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                No collections found
+              </TableCell>
+            </TableRow>
+          ) : (
+            data.map((collection) => {
+              const isSelected = selectedCollection === collection.tick;
+              const mintPercentage = collection.minted_percentage ||
+                (collection.total_supply && collection.minted_count
+                  ? (collection.minted_count / collection.total_supply) * 100
+                  : 0);
+
+              return (
+                <TableRow
+                  key={collection.tick}
+                  className={`cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
+                  onClick={() => onSelectCollection(collection.tick)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-0.5">
+                      <div className="w-8 h-8 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                        {collection.thumbnail_url ? (
+                          <img
+                            src={collection.thumbnail_url}
+                            alt={collection.tick}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                            <span className="text-xs font-medium text-primary/60">{collection.tick.substring(0, 2)}</span>
+                          </div>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {collection.floor_price ? `${collection.floor_price} KAS` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {collection.volume_24h ? formatNumber(collection.volume_24h) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {collection.total_volume ? formatNumber(collection.total_volume) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {collection.total_supply ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${getProgressColorClass(mintPercentage)} rounded-full`}
-                              style={{ width: `${mintPercentage}%` }}
-                            />
-                          </div>
-                          <span>
-                            {collection.minted_count ?? 0}/{collection.total_supply}
-                          </span>
+                      <span className="font-medium">{collection.tick}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {collection.floor_price ? `${collection.floor_price} KAS` : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {collection.total_volume ? formatNumber(collection.total_volume) : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {collection.total_supply ? (
+                      <div className="flex items-center gap-1">
+                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden flex-shrink-0">
+                          <div
+                            className={`h-full ${getProgressColorClass(mintPercentage)} rounded-full`}
+                            style={{ width: `${mintPercentage}%` }}
+                          />
                         </div>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell className={`text-right ${getColorClass(collection.change_24h)}`}>
-                      {collection.change_24h !== undefined ? (
-                        <>
-                          {collection.change_24h > 0 && <ArrowUpRight className="inline w-3 h-3 mr-1" />}
-                          {collection.change_24h < 0 && <ArrowDownRight className="inline w-3 h-3 mr-1" />}
-                          {formatChange(collection.change_24h)}
-                        </>
-                      ) : '-'}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                        <span className="whitespace-nowrap">
+                          {collection.minted_count ?? 0}/{collection.total_supply}
+                        </span>
+                      </div>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell className={`text-right ${getColorClass(collection.change_24h)}`}>
+                    {collection.change_24h !== undefined ? (
+                      <>
+                        {collection.change_24h > 0 && <ArrowUpRight className="inline w-3 h-3 mr-1" />}
+                        {collection.change_24h < 0 && <ArrowDownRight className="inline w-3 h-3 mr-1" />}
+                        {formatChange(collection.change_24h)}
+                      </>
+                    ) : '-'}
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>
+          {renderTable(firstHalf)}
+        </div>
+        <div>
+          {renderTable(secondHalf)}
+        </div>
       </div>
 
-      <div className="flex justify-between items-center mt-4">
+      <div className="flex justify-between items-center mt-2">
         <div className="text-sm text-muted-foreground">
           Showing page {currentPage} of {totalPages}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
@@ -353,19 +340,19 @@ const NFTTokenGrid = ({
   onTokenClick: (id: number) => void
 }) => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
       {isLoading ? (
         Array(12).fill(0).map((_, index) => (
           <div key={`skeleton-${index}`} className="border rounded-lg overflow-hidden">
             <Skeleton className="aspect-square w-full" />
             <div className="p-2">
-              <Skeleton className="h-4 w-16 mb-1" />
+              <Skeleton className="h-4 w-16" />
               <Skeleton className="h-3 w-24" />
             </div>
           </div>
         ))
       ) : tokens.length === 0 ? (
-        <div className="col-span-full flex items-center justify-center py-8 text-muted-foreground border rounded-lg">
+        <div className="col-span-full flex items-center justify-center py-2 text-muted-foreground border rounded-lg">
           No tokens found for this collection
         </div>
       ) : (
@@ -386,14 +373,9 @@ const NFTTokenGrid = ({
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
                 }}
               />
-              <Badge className="absolute top-2 right-2 bg-background/90">
-                #{token.id}
+              <Badge className="absolute bottom-2 left-2 bg-background/90 text-muted-foreground">
+                {token.minted ? "Minted" : "Not Minted"}
               </Badge>
-              {!token.minted && (
-                <Badge className="absolute bottom-2 left-2 bg-background/90 text-muted-foreground">
-                  Not Minted
-                </Badge>
-              )}
             </div>
             <div className="p-2">
               <div className="text-sm font-medium">#{token.id}</div>
@@ -413,9 +395,9 @@ const KRC721Explorer = () => {
   const [collections, setCollections] = useState<NFTCollection[]>([]);
   const [marketData, setMarketData] = useState<Record<string, any>>({});
   const [filteredCollections, setFilteredCollections] = useState<NFTCollection[]>([]);
+  const [filteredCards, setFilteredCards] = useState<NFTCollection[]>([]);
   const [loading, setLoading] = useState(true);
   const [paginationData, setPaginationData] = useState({ offset: 0, next: 0, hasMore: true });
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollection, setSelectedCollection] = useState<NFTCollection | null>(null);
   const [tokens, setTokens] = useState<NFTToken[]>([]);
@@ -429,9 +411,29 @@ const KRC721Explorer = () => {
   const [selectedToken, setSelectedToken] = useState<NFTToken | null>(null);
   const [tokensViewMode, setTokensViewMode] = useState<'grid' | 'list'>('grid');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
+  const getCardsPerPage = () => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768 ? 4 : 6;
+    }
+    return 6;
+  };
 
   const [tableCurrentPage, setTableCurrentPage] = useState(1);
+  const [cardsStartIndex, setCardsStartIndex] = useState(0);
+  const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const tablePageSize = 10;
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCardsPerPage(getCardsPerPage());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchMarketData = async () => {
     try {
@@ -448,10 +450,10 @@ const KRC721Explorer = () => {
     }
   };
 
-  const fetchCollections = async (offset = 0) => {
+  const fetchCollections = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts?offset=${offset}`);
+      const response = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch NFT data');
@@ -462,7 +464,21 @@ const KRC721Explorer = () => {
       if (data && data.result) {
         const marketDataObj = await fetchMarketData();
 
-        const processedCollections = data.result.map((nft: any) => {
+        let allCollections = [...data.result];
+        let nextOffset = data.next;
+
+        while (nextOffset) {
+          const nextResponse = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts?offset=${nextOffset}`);
+          if (!nextResponse.ok) break;
+
+          const nextData = await nextResponse.json();
+          if (!nextData.result) break;
+
+          allCollections = [...allCollections, ...nextData.result];
+          nextOffset = nextData.next;
+        }
+
+        const processedCollections = allCollections.reverse().map((nft: any) => {
           const market = marketDataObj[nft.tick] || {};
 
           const mintedPercentage = nft.max && nft.minted
@@ -479,7 +495,6 @@ const KRC721Explorer = () => {
             minted_count: nft.minted ? parseInt(nft.minted) : 0,
             minted_percentage: mintedPercentage,
             thumbnail_url: `https://cache.krc721.stream/krc721/mainnet/thumbnail/${nft.tick}/1`,
-            deployer: nft.deployer,
             buri: nft.buri,
             royaltyFee: nft.royaltyFee,
             premint: nft.premint ? parseInt(nft.premint) : 0,
@@ -487,90 +502,12 @@ const KRC721Explorer = () => {
           };
         });
 
-        const nextOffset = data.next;
-
-        setPaginationData({
-          offset,
-          next: nextOffset,
-          hasMore: nextOffset !== undefined && nextOffset !== null
-        });
-
-        setCollections(prev => {
-          if (offset === 0) {
-            return processedCollections;
-          } else {
-            return [...prev, ...processedCollections];
-          }
-        });
-
-        if (offset === 0 && nextOffset) {
-          fetchAllCollections(nextOffset);
-        }
+        setCollections(processedCollections);
       }
     } catch (error) {
       console.error('Error fetching collections:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAllCollections = async (nextOffset: number) => {
-    try {
-      while (nextOffset) {
-        const response = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts?offset=${nextOffset}`);
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch additional NFT data');
-        }
-
-        const data = await response.json();
-
-        if (data && data.result) {
-          const marketDataObj = await fetchMarketData();
-
-          const processedCollections = data.result.map((nft: any) => {
-            const market = marketDataObj[nft.tick] || {};
-
-            const mintedPercentage = nft.max && nft.minted
-              ? (parseInt(nft.minted) / parseInt(nft.max)) * 100
-              : undefined;
-
-            return {
-              tick: nft.tick,
-              floor_price: market.floor_price || 0,
-              total_volume: market.total_volume || 0,
-              volume_24h: market.volume_24h || 0,
-              change_24h: market.change_24h || 0,
-              total_supply: nft.max ? parseInt(nft.max) : undefined,
-              minted_count: nft.minted ? parseInt(nft.minted) : 0,
-              minted_percentage: mintedPercentage,
-              thumbnail_url: `https://cache.krc721.stream/krc721/mainnet/thumbnail/${nft.tick}/1`,
-              deployer: nft.deployer,
-              buri: nft.buri,
-              royaltyFee: nft.royaltyFee,
-              premint: nft.premint ? parseInt(nft.premint) : 0,
-              last_updated: nft.updated
-            };
-          });
-
-          setCollections(prev => [...prev, ...processedCollections]);
-
-          nextOffset = data.next;
-
-          setPaginationData({
-            offset: nextOffset || 0,
-            next: nextOffset,
-            hasMore: !!nextOffset
-          });
-
-          await new Promise(resolve => setTimeout(resolve, 50));
-        } else {
-
-          break;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching all collections:', error);
     }
   };
 
@@ -659,27 +596,45 @@ const KRC721Explorer = () => {
     }
   };
 
-  const loadMoreCollections = async () => {
-    if (paginationData.hasMore && !loading) {
-      await fetchCollections(paginationData.next);
+  const handleSwipe = (event: any, info: any) => {
+    if (info.offset.x < -50 && cardsStartIndex + cardsPerPage < filteredCards.length) {
+      setSlideDirection('right');
+      slideCards('right');
+    } else if (info.offset.x > 50 && cardsStartIndex > 0) {
+      setSlideDirection('left');
+      slideCards('left');
+    }
+  };
+
+  const slideCards = (direction: 'left' | 'right') => {
+    setSlideDirection(direction);
+
+    const isMobile = window.innerWidth < 768;
+    const moveCount = isMobile ? 2 : cardsPerPage;
+
+    if (direction === 'left') {
+      setCardsStartIndex(prev => Math.max(0, prev - moveCount));
+    } else {
+      setCardsStartIndex(prev => Math.min(filteredCards.length - moveCount, prev + moveCount));
     }
   };
 
   useEffect(() => {
     let filtered = [...collections];
 
-    if (searchQuery) {
+    if (showTokens && !isNaN(Number(searchQuery))) {
+      const tokenId = parseInt(searchQuery);
+      if (tokenId > 0) {
+        const foundToken = tokens.find(t => t.id === tokenId);
+        if (foundToken) {
+          handleTokenClick(tokenId);
+        }
+      }
+    } else if (searchQuery) {
       filtered = filtered.filter(c =>
         c.tick.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
-
-    filtered = filtered.sort((a, b) => {
-      const dateA = a.last_updated ? new Date(a.last_updated).getTime() : 0;
-      const dateB = b.last_updated ? new Date(b.last_updated).getTime() : 0;
-      return dateB - dateA;
-    });
 
     if (activeTab === 'top') {
       filtered = filtered
@@ -687,27 +642,19 @@ const KRC721Explorer = () => {
     }
 
     setFilteredCollections(filtered);
-  }, [collections, searchQuery, activeTab]);
+    setFilteredCards(filtered);
+  }, [collections, searchQuery, activeTab, showTokens, tokens]);
 
   useEffect(() => {
     fetchCollections();
   }, []);
-
-  const refreshData = async () => {
-    setRefreshing(true);
-    await fetchMarketData();
-    await fetchCollections(0);
-    if (selectedCollection) {
-      await fetchTokensForCollection(selectedCollection);
-    }
-    setRefreshing(false);
-  };
 
   const handleCollectionClick = (tick: string) => {
     const collection = collections.find(c => c.tick === tick);
     if (collection) {
       setSelectedCollection(collection);
       fetchTokensForCollection(collection);
+      setSearchQuery('');
     }
   };
 
@@ -735,20 +682,12 @@ const KRC721Explorer = () => {
   const handleBackClick = () => {
     setShowTokens(false);
     setSelectedToken(null);
+    setSearchQuery('');
   };
 
-  const scrollHorizontally = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const scrollAmount = 300;
-
-      if (direction === 'left') {
-        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      } else {
-        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      }
-    }
-  };
+  const visibleCards = useMemo(() => {
+    return filteredCards.slice(cardsStartIndex, cardsStartIndex + cardsPerPage);
+  }, [filteredCards, cardsStartIndex, cardsPerPage]);
 
   const paginatedTokens = useMemo(() => {
     const startIndex = (tokenPage - 1) * tokensPerPage;
@@ -788,36 +727,16 @@ const KRC721Explorer = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="flex flex-col space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               type="text"
-              placeholder="Search collections..."
+              placeholder={showTokens ? "Search by token ID..." : "Search collections..."}
               className="w-full pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshData}
-              disabled={refreshing}
-              className="relative"
-            >
-              {refreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Refresh
-              {refreshing && (
-                <span className="animate-ping absolute h-2 w-2 rounded-full bg-primary opacity-75 top-0 right-0"></span>
-              )}
-            </Button>
           </div>
         </div>
 
@@ -830,95 +749,109 @@ const KRC721Explorer = () => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="mb-8">
-                <div className="overflow-hidden relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
+              <div className="mb-1 relative">
+                <div className="flex items-center justify-center mb-3 relative">
+                  <div className="relative w-full px-4 overflow-hidden">
+                    {/* Navigation Controls */}
+                    <div className="flex justify-between absolute inset-0 pointer-events-none z-10">
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => scrollHorizontally('left')}
-                        className="h-8 w-8"
+                        onClick={() => slideCards('left')}
+                        disabled={cardsStartIndex === 0}
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 bg-background/80 backdrop-blur-sm text-foreground"
                       >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => scrollHorizontally('right')}
-                        className="h-8 w-8"
+                        onClick={() => slideCards('right')}
+                        disabled={cardsStartIndex + cardsPerPage >= filteredCards.length}
+                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 bg-background/80 backdrop-blur-sm text-foreground"
                       >
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
+                    </div>
+
+                    {/* Slider Content */}
+                    <div className="overflow-hidden py-2" ref={sliderRef}>
+                      <AnimatePresence initial={false} mode="popLayout">
+                        <motion.div
+                          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 w-full"
+                          key={cardsStartIndex}
+                          initial={{ 
+                            opacity: 0, 
+                            x: slideDirection === 'right' ? '100%' : '-100%'
+                          }}
+                          animate={{ 
+                            opacity: 1, 
+                            x: 0 
+                          }}
+                          exit={{ 
+                            opacity: 0, 
+                            x: slideDirection === 'right' ? '-100%' : '100%',
+                            transition: { duration: 0.3 }
+                          }}
+                          transition={{ 
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                            opacity: { duration: 0.2 }
+                          }}
+                        >
+                          {loading && collections.length === 0 ? (
+                            Array(6).fill(0).map((_, i) => (
+                              <Card key={`skeleton-${i}`}>
+                                <CardContent className="p-0">
+                                  <Skeleton className="h-48 w-full rounded-t-lg" />
+                                  <div className="p-3 space-y-2">
+                                    <Skeleton className="h-6 w-24" />
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-3/4" />
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))
+                          ) : (
+                            visibleCards.length === 0 ? (
+                              <div className="col-span-full text-center py-6 text-muted-foreground">
+                                No collections found matching your search
+                              </div>
+                            ) : (
+                              visibleCards.map((collection) => (
+                                <motion.div
+                                  key={collection.tick}
+                                  variants={item}
+                                  whileHover={{ scale: 1.01 }}
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  <CollectionItem
+                                    collection={collection}
+                                    isSelected={selectedCollection?.tick === collection.tick}
+                                    onClick={() => handleCollectionClick(collection.tick)}
+                                  />
+                                </motion.div>
+                              ))
+                            )
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
                     </div>
                   </div>
-
-                  {loading && collections.length === 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                      {Array(5).fill(0).map((_, i) => (
-                        <Card key={`skeleton-${i}`}>
-                          <CardContent className="p-0">
-                            <Skeleton className="h-48 w-full rounded-t-lg" />
-                            <div className="p-4 space-y-2">
-                              <Skeleton className="h-6 w-24" />
-                              <Skeleton className="h-4 w-full" />
-                              <Skeleton className="h-4 w-3/4" />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <motion.div
-                      ref={scrollContainerRef}
-                      className="flex space-x-4 pb-4 overflow-x-auto scrollbar-hide"
-                      drag="x"
-                      dragConstraints={{ left: 0, right: 0 }}
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      {[...collections]
-                        .sort((a, b) => {
-                          const dateA = a.last_updated ? new Date(a.last_updated).getTime() : 0;
-                          const dateB = b.last_updated ? new Date(b.last_updated).getTime() : 0;
-                          return dateB - dateA;
-                        })
-                        .slice(0, 20)
-                        .map((collection) => (
-                          <motion.div
-                            key={collection.tick}
-                            className="flex-shrink-0 w-64"
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.98 }}
-                            variants={item}
-                          >
-                            <CollectionItem
-                              collection={collection}
-                              isSelected={selectedCollection?.tick === collection.tick}
-                              onClick={() => handleCollectionClick(collection.tick)}
-                            />
-                          </motion.div>
-                        ))}
-
-                      {filteredCollections.length === 0 && !loading && (
-                        <div className="flex-1 text-center py-8 text-muted-foreground">
-                          No collections found matching your search
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
                 </div>
               </div>
 
-              <div className="mb-6 flex overflow-x-auto border-b">
+              <div className="mb-2 flex overflow-x-auto border-b">
                 <button
-                  className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'top' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                  className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'top' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                   onClick={() => setActiveTab('top')}
                 >
                   <BarChart3 className="w-4 h-4 inline-block mr-2" />
                   <span>Top Volume</span>
                 </button>
                 <button
-                  className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'recent' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                  className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'recent' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                   onClick={() => setActiveTab('recent')}
                 >
                   <Clock className="w-4 h-4 inline-block mr-2" />
@@ -958,9 +891,9 @@ const KRC721Explorer = () => {
               </div>
 
               {selectedCollection && (
-                <Card className="mb-6">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
+                <Card className="mb-2">
+                  <CardContent className="p-2">
+                    <div className="flex flex-col md:flex-row gap-2">
                       <div className="w-full md:w-40 h-40 rounded-md overflow-hidden flex-shrink-0">
                         {selectedCollection.thumbnail_url ? (
                           <img
@@ -982,22 +915,30 @@ const KRC721Explorer = () => {
                       <div className="flex-1">
                         <h2 className="text-2xl font-bold mb-2">{selectedCollection.tick}</h2>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-2">
                           <div>
                             <p className="text-sm text-muted-foreground">Floor Price</p>
                             <p className="text-lg font-bold">{selectedCollection.floor_price ? `${selectedCollection.floor_price} KAS` : 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">24h Volume</p>
-                            <p className="text-lg font-bold">{selectedCollection.volume_24h ? `${formatNumber(selectedCollection.volume_24h)} KAS` : 'N/A'}</p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Total Volume</p>
                             <p className="text-lg font-bold">{selectedCollection.total_volume ? `${formatNumber(selectedCollection.total_volume)} KAS` : 'N/A'}</p>
                           </div>
                           <div>
+                            <p className="text-sm text-muted-foreground">24h Change</p>
+                            <p className={`text-lg font-bold ${getColorClass(selectedCollection.change_24h)}`}>
+                              {selectedCollection.change_24h !== undefined ? (
+                                <>
+                                  {selectedCollection.change_24h > 0 && <ArrowUpRight className="inline w-4 h-4 mr-1" />}
+                                  {selectedCollection.change_24h < 0 && <ArrowDownRight className="inline w-4 h-4 mr-1" />}
+                                  {formatChange(selectedCollection.change_24h)}
+                                </>
+                              ) : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
                             <p className="text-sm text-muted-foreground">Mint Progress</p>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
                                 <div
                                   className={`h-full ${getProgressColorClass(selectedCollection.minted_percentage || 0)} rounded-full`}
@@ -1015,56 +956,12 @@ const KRC721Explorer = () => {
                               {selectedCollection.minted_count || 0}/{selectedCollection.total_supply || '?'}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">24h Change</p>
-                            <p className={`text-lg font-bold ${getColorClass(selectedCollection.change_24h)}`}>
-                              {selectedCollection.change_24h !== undefined ? (
-                                <>
-                                  {selectedCollection.change_24h > 0 && <ArrowUpRight className="inline w-4 h-4 mr-1" />}
-                                  {selectedCollection.change_24h < 0 && <ArrowDownRight className="inline w-4 h-4 mr-1" />}
-                                  {formatChange(selectedCollection.change_24h)}
-                                </>
-                              ) : 'N/A'}
-                            </p>
-                          </div>
                         </div>
-
-                        {selectedCollection.deployer && (
-                          <div className="text-sm text-muted-foreground truncate">
-                            <span className="font-medium">Deployer:</span> {selectedCollection.deployer}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               )}
-
-              <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(p => Math.max(1, p - 1))}
-                    disabled={tokenPage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-
-                  <span className="text-sm font-medium">
-                    Page {tokenPage} of {maxTokenPage}
-                  </span>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(p => Math.min(maxTokenPage, p + 1))}
-                    disabled={tokenPage === maxTokenPage}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
 
               <NFTTokenGrid
                 tokens={paginatedTokens}
@@ -1073,7 +970,7 @@ const KRC721Explorer = () => {
               />
 
               {tokens.length > tokensPerPage && (
-                <div className="flex justify-center items-center mt-6 gap-2">
+                <div className="flex justify-center items-center mt-3 gap-1">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1142,28 +1039,25 @@ const KRC721Explorer = () => {
               )}
 
               {selectedToken && (
-                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <Card className="w-full max-w-2xl">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                  <Card className="w-full max-w-4xl">
+                    <CardContent className="p-2">
+                      <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="text-xl font-bold">
                             {selectedCollection?.tick} #{selectedToken.id}
                           </h3>
-                          {selectedToken.metadata?.name && (
-                            <p className="text-muted-foreground">{selectedToken.metadata.name}</p>
-                          )}
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => setSelectedToken(null)}
                         >
-                          <ChevronLeft className="w-5 h-5" />
+                          <ChevronLeft className="w-8 h-8" />
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
                           <div className="aspect-square rounded-md overflow-hidden bg-muted">
                             <img
@@ -1177,24 +1071,16 @@ const KRC721Explorer = () => {
                             />
                           </div>
 
-                          <div className="flex justify-between items-center mt-4">
+                          <div className="flex justify-between items-center mt-2">
                             <Badge variant={selectedToken.minted ? "default" : "secondary"}>
                               {selectedToken.minted ? "Minted" : "Not Minted"}
                             </Badge>
                           </div>
                         </div>
-
                         <div>
-                          {selectedToken.metadata?.description && (
-                            <div className="mb-4">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-1">Description</h4>
-                              <p className="text-sm whitespace-pre-wrap">{selectedToken.metadata.description}</p>
-                            </div>
-                          )}
-
                           {selectedToken.metadata?.attributes && selectedToken.metadata.attributes.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-medium text-muted-foreground mb-2">Attributes</h4>
+                              <h4 className="text-sm font-medium text-muted-foreground mb-1">Attributes</h4>
                               <div className="grid grid-cols-2 gap-2">
                                 {selectedToken.metadata.attributes.map((attr, i) => (
                                   <div key={i} className="border rounded-md p-2 bg-muted/10">

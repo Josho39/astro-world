@@ -2,8 +2,6 @@
 
 import React, { Suspense } from 'react';
 import ChartPage from './chartpage';
-import { PageHeader } from '@/components/ui/page-header';
-import { LineChart } from 'lucide-react';
 
 function ChartPageLoading() {
   return (
@@ -16,16 +14,9 @@ function ChartPageLoading() {
 export default function TVchartsPage() {
   return (
     <div className="w-full py-1">
-      <div className="space-y-4">
-        <PageHeader 
-          category="krc20"
-          title="KRC20 Charts"
-          icon={<LineChart className="w-5 h-5" />}
-        />
-        <Suspense fallback={<ChartPageLoading />}>
-          <ChartPage />
-        </Suspense>
-      </div>
+      <Suspense fallback={<ChartPageLoading />}>
+        <ChartPage />
+      </Suspense>
     </div>
   );
 }
