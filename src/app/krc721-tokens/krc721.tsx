@@ -396,6 +396,7 @@ const KRC721Explorer = () => {
             <div className="mb-8">
               <div className="overflow-hidden relative">
                 <div className="flex items-center justify-between mb-2">
+
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => scrollHorizontally('left')}
