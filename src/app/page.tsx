@@ -21,7 +21,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
-      <div className="flex flex-1 w-full">
+      <div className="flex flex-col md:flex-row flex-1 w-full">
         <motion.div 
           className="relative flex-1 overflow-hidden bg-gradient-to-b from-green-500/20 via-green-600/10 to-green-700/5 border-r border-green-500/20"
           initial={{ flex: 1 }}

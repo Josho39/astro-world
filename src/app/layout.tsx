@@ -24,8 +24,8 @@ export default function RootLayout({
           <WalletProvider>
             <div className="min-h-screen bg-background">
               <NavBar />
-              <main className="md:pl-10">
-                <div className="max-w-8xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+              <main className="pl-0 md:pl-10">
+                <div className="max-w-8xl mx-auto py-4 sm:py-6 px-2 sm:px-6 lg:px-8">
                   {children}
                 </div>
               </main>

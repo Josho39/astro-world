@@ -55,15 +55,12 @@ const KRC721Explorer = () => {
       try {
         setLoading(true);
         
-        // Fetch market data from markets.krc20.stream
         const marketResponse = await fetch('https://markets.krc20.stream/krc721/mainnet/markets');
         if (!marketResponse.ok) {
           throw new Error('Failed to fetch market data');
         }
         
         const marketData = await marketResponse.json();
-        
-        // Fetch NFT data from mainnet.krc721.stream
         const nftResponse = await fetch('https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts');
         if (!nftResponse.ok) {
           throw new Error('Failed to fetch NFT data');
@@ -71,19 +68,14 @@ const KRC721Explorer = () => {
         
         const nftData = await nftResponse.json();
         
-        // Process and combine the data
         if (marketData && nftData.result) {
           const processedCollections = [];
-          
-          // Create a map for quick access to NFT data
           const nftMap = new Map();
           nftData.result.forEach((nft: any) => {
             nftMap.set(nft.tick, nft);
           });
           
-          // Process market data and combine with NFT data
           for (const [tick, market] of Object.entries(marketData)) {
-            // Skip the KAS ticker as requested
             if (tick === 'KAS') continue;
             
             const marketInfo = market as any;
@@ -110,7 +102,6 @@ const KRC721Explorer = () => {
                 premint: nftInfo.premint ? parseInt(nftInfo.premint) : 0
               });
             } else {
-              // Include collections from market data even if they're not in the NFT data
               processedCollections.push({
                 tick: tick,
                 floor_price: marketInfo.floor_price || 0,
@@ -138,7 +129,6 @@ const KRC721Explorer = () => {
     try {
       setLoading(true);
       
-      // Fetch minted tokens for the collection from api/collections
       const response = await fetch(`/api/collections?tick=${collection.tick}`);
       
       if (!response.ok) {
@@ -146,16 +136,13 @@ const KRC721Explorer = () => {
       }
       
       const data = await response.json();
-      
       const totalSupply = collection.total_supply || 500;
       const mintedTokenIds = new Set<number>();
       
-      // Create a set of minted token IDs
       if (data && data.minted) {
         data.minted.forEach((id: number) => mintedTokenIds.add(id));
       }
       
-      // Create tokens array with minted status
       const tokens: NFTToken[] = [];
       
       for (let i = 1; i <= totalSupply; i++) {
@@ -171,7 +158,6 @@ const KRC721Explorer = () => {
     } catch (error) {
       console.error('Error fetching tokens:', error);
       
-      // Fallback to generating tokens without minted status
       const totalSupply = collection.total_supply || 500;
       const fallbackTokens: NFTToken[] = [];
       
@@ -205,7 +191,6 @@ const KRC721Explorer = () => {
       const data = await response.json();
       
       if (data.result && data.result.length > 0) {
-        // Process and add the new collections
         const newCollections = data.result.map((nft: any) => {
           const mintedPercentage = nft.max && nft.minted
             ? (parseInt(nft.minted) / parseInt(nft.max)) * 100
@@ -213,7 +198,7 @@ const KRC721Explorer = () => {
           
           return {
             tick: nft.tick,
-            floor_price: 0, // We'll update these with market data later
+            floor_price: 0, 
             total_volume: 0,
             volume_24h: 0,
             change_24h: 0,
@@ -228,13 +213,11 @@ const KRC721Explorer = () => {
           };
         });
         
-        // Fetch market data for these new collections
         try {
           const marketResponse = await fetch('https://markets.krc20.stream/krc721/mainnet/markets');
           if (marketResponse.ok) {
             const marketData = await marketResponse.json();
             
-            // Update the new collections with market data
             newCollections.forEach((collection: NFTCollection) => {
               const marketInfo = marketData[collection.tick] as any;
               if (marketInfo) {
@@ -251,7 +234,7 @@ const KRC721Explorer = () => {
         
         setCollections(prev => [...prev, ...newCollections]);
         setOffset(nextOffset);
-        setHasMore(data.result.length === 50); // If we got less than 50, there's no more to load
+        setHasMore(data.result.length === 50); 
       } else {
         setHasMore(false);
       }
@@ -263,11 +246,10 @@ const KRC721Explorer = () => {
     }
   };
   
-  // Function to handle horizontal scroll with arrow buttons
   const scrollHorizontally = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
-      const scrollAmount = 300; // Adjust as needed
+      const scrollAmount = 300; 
       
       if (direction === 'left') {
         container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
@@ -297,10 +279,8 @@ const KRC721Explorer = () => {
   };
   
   const handleCollectionClick = (collection: NFTCollection) => {
-    // Navigate to the collection page
     router.push(`/${collection.tick}`);
     
-    // Also set the selected collection and fetch tokens for the current view
     setSelectedCollection(collection);
     fetchTokensForCollection(collection);
   };
@@ -315,7 +295,6 @@ const KRC721Explorer = () => {
       
       const marketData = await marketResponse.json();
       
-      // Update collection data with latest market info
       setCollections(prev => {
         return prev.map(collection => {
           const marketInfo = marketData[collection.tick] as any;
@@ -373,7 +352,7 @@ const KRC721Explorer = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <header className="flex justify-between items-center py-6">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4 sm:py-6">
         <div className="flex items-center space-x-2">
           <div className="relative w-10 h-10 rounded-lg overflow-hidden border">
             <motion.div
@@ -394,7 +373,7 @@ const KRC721Explorer = () => {
           </div>
         </div>
         
-        <div className="relative w-full max-w-md mx-4">
+        <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
             type="text"
@@ -516,26 +495,26 @@ const KRC721Explorer = () => {
               </div>
             </div>
             
-            <div className="mb-6 flex space-x-4 border-b">
+            <div className="mb-6 flex overflow-x-auto scrollbar-hide border-b">
               <button 
-                className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'trending' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                className={`px-3 sm:px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'trending' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                 onClick={() => setActiveTab('trending')}
               >
-                <TrendingUp className="w-4 h-4 inline-block mr-2" />
-                Trending
+                <TrendingUp className="w-4 h-4 inline-block mr-1 sm:mr-2" />
+                <span className="text-sm sm:text-base">Trending</span>
               </button>
               <button 
-                className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'top' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                className={`px-3 sm:px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'top' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                 onClick={() => setActiveTab('top')}
               >
-                <BarChart3 className="w-4 h-4 inline-block mr-2" />
-                Top Volume
+                <BarChart3 className="w-4 h-4 inline-block mr-1 sm:mr-2" />
+                <span className="text-sm sm:text-base">Top Volume</span>
               </button>
               <button 
-                className={`px-4 py-2 font-medium border-b-2 transition-colors ${activeTab === 'recent' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                className={`px-3 sm:px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'recent' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                 onClick={() => setActiveTab('recent')}
               >
-                Recent
+                <span className="text-sm sm:text-base">Recent</span>
               </button>
             </div>
             
@@ -543,7 +522,7 @@ const KRC721Explorer = () => {
               variants={container}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-10"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-10"
             >
               {getDisplayedCollections().map((collection) => (
                 <motion.div 
@@ -604,7 +583,7 @@ const KRC721Explorer = () => {
             
             {selectedCollection && (
               <div className="mb-6 border rounded-xl p-4">
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="w-16 h-16 rounded-md overflow-hidden">
                     {selectedCollection.thumbnail_url && (
                       <img 
@@ -615,8 +594,8 @@ const KRC721Explorer = () => {
                     )}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{selectedCollection.tick}</h2>
-                    <div className="flex space-x-4 text-sm mt-1">
+                    <h2 className="text-xl sm:text-2xl font-bold">{selectedCollection.tick}</h2>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-1">
                       <div>
                         <span className="text-muted-foreground">Floor:</span> {selectedCollection.floor_price} KAS
                       </div>
@@ -638,7 +617,7 @@ const KRC721Explorer = () => {
               variants={container}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6"
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4 mb-6"
             >
               {getPageTokens().map((token) => (
                 <motion.div
@@ -666,25 +645,27 @@ const KRC721Explorer = () => {
             </motion.div>
             
             {tokens.length > itemsPerPage && (
-              <div className="flex justify-center items-center space-x-2 mb-10">
+              <div className="flex justify-center items-center space-x-3 mb-10">
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="w-9 h-9 rounded-md flex items-center justify-center border disabled:opacity-50"
+                  className="w-10 h-10 rounded-md flex items-center justify-center border disabled:opacity-50"
+                  aria-label="Previous page"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
                 
-                <div className="text-sm">
+                <div className="text-sm font-medium">
                   Page {currentPage} of {maxPage}
                 </div>
                 
                 <button
                   onClick={() => setCurrentPage(p => Math.min(maxPage, p + 1))}
                   disabled={currentPage === maxPage}
-                  className="w-9 h-9 rounded-md flex items-center justify-center border disabled:opacity-50"
+                  className="w-10 h-10 rounded-md flex items-center justify-center border disabled:opacity-50"
+                  aria-label="Next page"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             )}
