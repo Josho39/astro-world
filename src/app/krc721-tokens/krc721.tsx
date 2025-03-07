@@ -91,7 +91,7 @@ const CollectionItem = ({
   return (
     <motion.div
       whileHover={{ y: -5, boxShadow: "0 8px 30px -15px rgba(0, 0, 0, 0.2)" }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.98 }} // Add tactile feedback for both desktop and mobile
       className={`border rounded-xl overflow-hidden transition-colors duration-300 cursor-pointer
       ${isSelected ? 'border-primary shadow-md bg-primary/5' : 'hover:border-primary/50'}`}
       onClick={onClick}
@@ -416,10 +416,10 @@ const KRC721Explorer = () => {
 
   const getCardsPerPage = () => {
     if (typeof window !== 'undefined') {
-      if (window.innerWidth < 640) return 2; 
-      if (window.innerWidth < 768) return 4; 
-      if (window.innerWidth < 1024) return 4; 
-      return 6; 
+      if (window.innerWidth < 640) return 2; // Small phones
+      if (window.innerWidth < 768) return 3; // Larger phones
+      if (window.innerWidth < 1024) return 4; // Tablets
+      return 6; // Desktop
     }
     return 6;
   };
@@ -434,7 +434,8 @@ const KRC721Explorer = () => {
     const handleResize = () => {
       const newCardsPerPage = getCardsPerPage();
       setCardsPerPage(newCardsPerPage);
-
+      
+      // Keep current index within bounds after resize
       if (cardsStartIndex + newCardsPerPage > filteredCards.length) {
         setCardsStartIndex(Math.max(0, filteredCards.length - newCardsPerPage));
       }
@@ -606,9 +607,11 @@ const KRC721Explorer = () => {
   };
 
   const handleSwipe = (event: any, info: any) => {
+    // More sensitive for mobile devices (smaller threshold)
     const swipeThreshold = window.innerWidth < 768 ? 30 : 50;
     const velocity = Math.abs(info.velocity.x);
     
+    // Either use offset for drag distance or velocity for quick flicks
     if ((info.offset.x < -swipeThreshold || velocity > 0.5) && cardsStartIndex + cardsPerPage < filteredCards.length) {
       setSlideDirection('right');
       slideCards('right');
@@ -622,6 +625,7 @@ const KRC721Explorer = () => {
     setSlideDirection(direction);
 
     const isMobile = window.innerWidth < 768;
+    // On mobile, move fewer cards at a time for smoother experience
     const moveCount = isMobile ? 1 : cardsPerPage;
 
     if (direction === 'left') {
@@ -630,8 +634,9 @@ const KRC721Explorer = () => {
       setCardsStartIndex(prev => Math.min(filteredCards.length - moveCount, prev + moveCount));
     }
     
+    // Haptic feedback on mobile if supported
     if (isMobile && navigator.vibrate) {
-      navigator.vibrate(10); 
+      navigator.vibrate(10); // Subtle vibration
     }
   };
 
@@ -661,6 +666,15 @@ const KRC721Explorer = () => {
     setFilteredCards(filtered);
   }, [collections, searchQuery, activeTab, showTokens, tokens]);
 
+  // Track swipe instruction display
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setTimeout(() => {
+        localStorage.setItem('swipe-instruction-shown', 'true');
+      }, 5000); // Hide after 5 seconds
+    }
+  }, []);
+  
   useEffect(() => {
     fetchCollections();
   }, []);
@@ -768,29 +782,46 @@ const KRC721Explorer = () => {
               <div className="mb-1 relative">
                 <div className="flex items-center justify-center mb-3 relative">
                   <div className="relative w-full px-4 overflow-hidden">
-                    {/* Navigation Controls */}
-                    <div className="flex justify-between absolute inset-0 pointer-events-none z-10">
+                    {/* Navigation Controls - Hide on mobile, rely on swipe instead */}
+                    <div className="hidden sm:flex justify-between absolute inset-0 pointer-events-none z-10">
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={() => slideCards('left')}
                         disabled={cardsStartIndex === 0}
-                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 active:scale-95 bg-background/80 backdrop-blur-sm text-foreground"
+                        className="h-10 w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 active:scale-95 bg-background/80 backdrop-blur-sm text-foreground"
                       >
-                        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <ChevronLeft className="h-5 w-5" />
                       </Button>
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={() => slideCards('right')}
                         disabled={cardsStartIndex + cardsPerPage >= filteredCards.length}
-                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 active:scale-95 bg-background/80 backdrop-blur-sm text-foreground"
+                        className="h-10 w-10 rounded-full shadow self-center pointer-events-auto transform transition-transform hover:scale-105 active:scale-95 bg-background/80 backdrop-blur-sm text-foreground"
                       >
-                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <ChevronRight className="h-5 w-5" />
                       </Button>
                     </div>
+                    
+                    {/* Mobile navigation dots */}
+                    {window.innerWidth < 768 && (
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-1 py-1">
+                        {Array.from({length: Math.ceil(filteredCards.length / 4)}).map((_, i) => (
+                          <div 
+                            key={i}
+                            className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                              Math.floor(cardsStartIndex / 4) === i 
+                                ? 'bg-primary' 
+                                : 'bg-primary/20'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {/* Mobile swipe indicators */}
+                    {/* Mobile swipe indicators - always visible on mobile */}
                     {window.innerWidth < 768 && (
                       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none px-2 z-0 opacity-70">
                         {cardsStartIndex > 0 && (
@@ -803,6 +834,15 @@ const KRC721Explorer = () => {
                             <ChevronRight className="w-4 h-4 text-foreground" />
                           </div>
                         )}
+                      </div>
+                    )}
+                    
+                    {/* Mobile instruction on first view */}
+                    {window.innerWidth < 768 && !localStorage.getItem('swipe-instruction-shown') && (
+                      <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none px-2 z-20 mb-2">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-sm text-xs text-center">
+                          Swipe horizontally to navigate
+                        </div>
                       </div>
                     )}
                     
@@ -826,6 +866,9 @@ const KRC721Explorer = () => {
                             transition: { duration: 0.3 }
                           }}
                           transition={{ 
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
                             opacity: { duration: 0.2 }
                           }}
                         >
