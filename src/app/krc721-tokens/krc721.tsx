@@ -115,13 +115,6 @@ const CollectionItem = ({
       <div className="p-2">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-lg truncate">{collection.tick}</h3>
-          {!isMobile && collection.change_24h !== undefined && (
-            <Badge className={`${getColorClass(collection.change_24h)} bg-background`}>
-              {collection.change_24h > 0 && <ArrowUpRight className="inline w-3 h-3 mr-1" />}
-              {collection.change_24h < 0 && <ArrowDownRight className="inline w-3 h-3 mr-1" />}
-              {formatChange(collection.change_24h)}
-            </Badge>
-          )}
         </div>
 
         {collection.total_supply && (
@@ -130,7 +123,7 @@ const CollectionItem = ({
               <span className="text-muted-foreground">Mint Progress</span>
               <span>{collection.minted_count || 0}/{collection.total_supply}</span>
             </div>
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full ${getProgressColorClass(mintPercentage)} rounded-full`}
                 style={{ width: `${mintPercentage}%` }}
