@@ -113,27 +113,7 @@ const CollectionItem = ({
       <div className="p-3">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-lg truncate">{collection.tick}</h3>
-          {!isMobile && collection.change_24h !== undefined && (
-            <Badge className={`${getColorClass(collection.change_24h)} bg-background`}>
-              {collection.change_24h > 0 && <ArrowUpRight className="inline w-3 h-3 mr-1" />}
-              {collection.change_24h < 0 && <ArrowDownRight className="inline w-3 h-3 mr-1" />}
-              {formatChange(collection.change_24h)}
-            </Badge>
-          )}
         </div>
-
-        {!isMobile && (
-          <div className="grid grid-cols-2 gap-2 text-sm mb-2">
-            <div>
-              <p className="text-muted-foreground">Floor</p>
-              <p className="font-medium">{collection.floor_price ? `${collection.floor_price} KAS` : '-'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Total Vol</p>
-              <p className="font-medium">{collection.total_volume ? formatNumber(collection.total_volume) : '-'}</p>
-            </div>
-          </div>
-        )}
 
         {collection.total_supply && (
           <div className="space-y-1">
@@ -141,7 +121,7 @@ const CollectionItem = ({
               <span className="text-muted-foreground">Mint Progress</span>
               <span>{collection.minted_count || 0}/{collection.total_supply}</span>
             </div>
-            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full ${getProgressColorClass(mintPercentage)} rounded-full`}
                 style={{ width: `${mintPercentage}%` }}
@@ -206,7 +186,7 @@ const CollectionTable = ({
             ))
           ) : data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={5} className="text-center py-2 text-muted-foreground">
                 No collections found
               </TableCell>
             </TableRow>
@@ -299,7 +279,7 @@ const CollectionTable = ({
         </div>
       </div>
 
-      <div className="flex justify-between items-center mt-4">
+      <div className="flex justify-between items-center mt-2">
         <div className="text-sm text-muted-foreground">
           Showing page {currentPage} of {totalPages}
         </div>
@@ -366,7 +346,7 @@ const NFTTokenGrid = ({
           </div>
         ))
       ) : tokens.length === 0 ? (
-        <div className="col-span-full flex items-center justify-center py-8 text-muted-foreground border rounded-lg">
+        <div className="col-span-full flex items-center justify-center py-4 text-muted-foreground border rounded-lg">
           No tokens found for this collection
         </div>
       ) : (
@@ -468,7 +448,7 @@ const KRC721Explorer = () => {
     }
   };
 
-  const fetchCollections = async (next?: number) => {
+  const fetchCollections = async () => {
     try {
       setLoading(true);
       const response = await fetch(`https://mainnet.krc721.stream/api/v1/krc721/mainnet/nfts`);
@@ -832,18 +812,18 @@ const KRC721Explorer = () => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="mb-8">
+              <div className="mb-1">
                 <div className="overflow-hidden relative">
-                  <div className="flex items-center justify-between mb-4 relative">
+                  <div className="flex items-center justify-between mb-2 relative">
                     <div className="hidden md:block">
                       <Button
                         variant="outline"
-                        size="lg"
+                        size="sm"
                         onClick={() => slideCards('left')}
                         disabled={cardsStartIndex === 0}
-                        className="h-16 w-16 absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-transparent backdrop-blur-sm rounded-full shadow-lg border border-white/20 flex items-center justify-center hover:bg-white/10 transition-colors"
+                        className="h-10 w-10 absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border flex items-center justify-center hover:bg-accent transition-colors"
                       >
-                        <ChevronLeft className="h-10 w-10 text-white" strokeWidth={3} />
+                        <ChevronLeft className="h-5 w-5 text-foreground" />
                         <span className="sr-only">Previous</span>
                       </Button>
                     </div>
@@ -855,7 +835,7 @@ const KRC721Explorer = () => {
                       dragElastic={0.2}
                       onDragEnd={handleSwipe}
                     >
-                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full px-4 md:px-20">
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full px-2 md:px-20">
                         {loading && collections.length === 0 ? (
                           Array(6).fill(0).map((_, i) => (
                             <Card key={`skeleton-${i}`}>
@@ -871,7 +851,7 @@ const KRC721Explorer = () => {
                           ))
                         ) : (
                           visibleCards.length === 0 ? (
-                            <div className="col-span-full text-center py-8 text-muted-foreground">
+                            <div className="col-span-full text-center py-4 text-muted-foreground">
                               No collections found matching your search
                             </div>
                           ) : (
@@ -897,12 +877,12 @@ const KRC721Explorer = () => {
                     <div className="hidden md:block">
                       <Button
                         variant="outline"
-                        size="lg"
+                        size="sm"
                         onClick={() => slideCards('right')}
                         disabled={cardsStartIndex + cardsPerPage >= filteredCards.length}
-                        className="h-16 w-16 absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-transparent backdrop-blur-sm rounded-full shadow-lg border border-white/20 flex items-center justify-center hover:bg-white/10 transition-colors"
+                        className="h-10 w-10 absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border flex items-center justify-center hover:bg-accent transition-colors"
                       >
-                        <ChevronRight className="h-10 w-10 text-white" strokeWidth={3} />
+                        <ChevronRight className="h-5 w-5 text-foreground" />
                         <span className="sr-only">Next</span>
                       </Button>
                     </div>
@@ -916,7 +896,7 @@ const KRC721Explorer = () => {
                 </div>
               </div>
 
-              <div className="mb-6 flex overflow-x-auto border-b">
+              <div className="mb-1 flex overflow-x-auto border-b">
                 <button
                   className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'top' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                   onClick={() => setActiveTab('top')}
@@ -952,7 +932,7 @@ const KRC721Explorer = () => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="mb-4">
+              <div className="mb-1">
                 <Button
                   variant="outline"
                   size="sm"
@@ -965,9 +945,9 @@ const KRC721Explorer = () => {
               </div>
 
               {selectedCollection && (
-                <Card className="mb-6">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
+                <Card className="mb-1">
+                  <CardContent className="p-1">
+                    <div className="flex flex-col md:flex-row gap-3">
                       <div className="w-full md:w-40 h-40 rounded-md overflow-hidden flex-shrink-0">
                         {selectedCollection.thumbnail_url ? (
                           <img
@@ -989,7 +969,7 @@ const KRC721Explorer = () => {
                       <div className="flex-1">
                         <h2 className="text-2xl font-bold mb-2">{selectedCollection.tick}</h2>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-2">
                           <div>
                             <p className="text-sm text-muted-foreground">Floor Price</p>
                             <p className="text-lg font-bold">{selectedCollection.floor_price ? `${selectedCollection.floor_price} KAS` : 'N/A'}</p>
@@ -1037,32 +1017,6 @@ const KRC721Explorer = () => {
                 </Card>
               )}
 
-              <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(p => Math.max(1, p - 1))}
-                    disabled={tokenPage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-
-                  <span className="text-sm font-medium">
-                    Page {tokenPage} of {maxTokenPage}
-                  </span>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(p => Math.min(maxTokenPage, p + 1))}
-                    disabled={tokenPage === maxTokenPage}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
               <NFTTokenGrid
                 tokens={paginatedTokens}
                 isLoading={tokensLoading}
@@ -1070,7 +1024,7 @@ const KRC721Explorer = () => {
               />
 
               {tokens.length > tokensPerPage && (
-                <div className="flex justify-center items-center mt-6 gap-2">
+                <div className="flex justify-center items-center mt-2 gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1140,27 +1094,24 @@ const KRC721Explorer = () => {
 
               {selectedToken && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <Card className="w-full max-w-2xl">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
+                  <Card className="w-full max-w-4xl">
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-start mb-1">
                         <div>
                           <h3 className="text-xl font-bold">
                             {selectedCollection?.tick} #{selectedToken.id}
                           </h3>
-                          {selectedToken.metadata?.name && (
-                            <p className="text-muted-foreground">{selectedToken.metadata.name}</p>
-                          )}
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => setSelectedToken(null)}
                         >
-                          <ChevronLeft className="w-5 h-5" />
+                          <ChevronLeft className="w-8 h-8" />
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
                           <div className="aspect-square rounded-md overflow-hidden bg-muted">
                             <img
@@ -1173,22 +1124,9 @@ const KRC721Explorer = () => {
                               }}
                             />
                           </div>
-
-                          <div className="flex justify-between items-center mt-4">
-                            <Badge variant={selectedToken.minted ? "default" : "secondary"}>
-                              {selectedToken.minted ? "Minted" : "Not Minted"}
-                            </Badge>
-                          </div>
                         </div>
 
                         <div>
-                          {selectedToken.metadata?.description && (
-                            <div className="mb-4">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-1">Description</h4>
-                              <p className="text-sm whitespace-pre-wrap">{selectedToken.metadata.description}</p>
-                            </div>
-                          )}
-
                           {selectedToken.metadata?.attributes && selectedToken.metadata.attributes.length > 0 && (
                             <div>
                               <h4 className="text-sm font-medium text-muted-foreground mb-2">Attributes</h4>
