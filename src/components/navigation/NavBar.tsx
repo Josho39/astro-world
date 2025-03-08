@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Wallet, Banknote, Box, Eye, LineChart, Star, Search, Lock, ChevronRight, Power, Calculator, Coins, Menu, X, Home, Palette } from 'lucide-react';
+import { Wallet, Banknote, Box, Eye, LineChart, Star, Lock, ChevronRight, Power, Calculator, Coins, Menu, X, Home, Palette } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const navItems = [
     {
@@ -83,9 +84,9 @@ const NavBar = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { walletConnected, walletInfo, connectWallet, disconnectWallet } = useWallet();
-
     const [isDesktop, setIsDesktop] = useState(false);
     const navRef = useRef(null);
+    const [activeCategoryMobile, setActiveCategoryMobile] = useState<string | null>(null);
 
     useEffect(() => {
         setIsDesktop(window.innerWidth >= 768);
@@ -125,41 +126,53 @@ const NavBar = () => {
         }
     };
 
-    const MobileMenuButton = () => (
-        <Button
-            variant="ghost"
-            size="icon"
-            className="fixed top-0 left-0 z-50 md:hidden rounded-none h-10 w-10"
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-        >
-            {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </Button>
-    );
+    const toggleCategoryMobile = (category: string) => {
+        setActiveCategoryMobile(prevCategory => prevCategory === category ? null : category);
+    };
 
     const toggleExpanded = () => {
         setIsExpanded(!isExpanded);
     };
 
+    const MobileNavButton = () => (
+        <div className="fixed top-4 left-4 z-50 md:hidden">
+            <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full shadow-md bg-background border-primary/20 hover:bg-background/90 h-10 w-10"
+                onClick={() => setIsMobileOpen(!isMobileOpen)}
+            >
+                {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+        </div>
+    );
+
     return (
         <>
-            <MobileMenuButton />
+            <MobileNavButton />
 
-            {isMobileOpen && (
-                <div
-                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
-                    onClick={() => setIsMobileOpen(false)}
-                />
-            )}
+            <AnimatePresence>
+                {isMobileOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.05 }}
+                        className="fixed inset-0 bg-background/70 backdrop-blur-md z-40 md:hidden"
+                        onClick={() => setIsMobileOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             <div className="fixed top-0 left-0 h-full z-50" ref={navRef}>
-                <nav
-                    className={`hidden md:flex h-full bg-background border-r border-border text-foreground 
-                        transition-all duration-300 ease-in-out 
-                        hover:w-64 ${isExpanded ? 'w-64' : 'w-16'}`}
+                <motion.nav
+                    className="hidden md:flex h-full bg-background border-r border-border text-foreground transition-all duration-300 ease-in-out shadow-md"
+                    initial={false}
+                    animate={{ width: isExpanded ? 240 : 72 }}
                     onMouseEnter={() => setIsExpanded(true)}
                     onMouseLeave={() => setIsExpanded(false)}
                 >
-                    <SidebarContent
+                    <DesktopSidebar
                         isExpanded={isExpanded}
                         pathname={pathname}
                         walletConnected={walletConnected}
@@ -167,28 +180,35 @@ const NavBar = () => {
                         handleWalletClick={handleWalletClick}
                         toggleMenu={toggleExpanded}
                     />
-                </nav>
+                </motion.nav>
 
-                <nav
-                    className={`md:hidden fixed top-0 left-0 h-full w-64 bg-background border-r border-border text-foreground
-                        transform transition-transform duration-300 ease-in-out z-50
-                        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
-                >
-                    <SidebarContent
-                        isExpanded={true}
-                        pathname={pathname}
-                        walletConnected={walletConnected}
-                        walletInfo={walletInfo}
-                        handleWalletClick={handleWalletClick}
-                        toggleMenu={() => { }}
-                    />
-                </nav>
+                <AnimatePresence>
+                    {isMobileOpen && (
+                        <motion.nav
+                            className="md:hidden fixed top-0 left-0 h-full bg-background border-r border-border text-foreground z-50 w-72 shadow-xl"
+                            initial={{ x: "-100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "-100%" }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        >
+                            <MobileSidebar
+                                pathname={pathname}
+                                walletConnected={walletConnected}
+                                walletInfo={walletInfo}
+                                handleWalletClick={handleWalletClick}
+                                closeMobileMenu={() => setIsMobileOpen(false)}
+                                activeCategory={activeCategoryMobile}
+                                toggleCategory={toggleCategoryMobile}
+                            />
+                        </motion.nav>
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );
 };
 
-interface SidebarContentProps {
+interface DesktopSidebarProps {
     isExpanded: boolean;
     pathname: string;
     walletConnected: boolean;
@@ -197,14 +217,14 @@ interface SidebarContentProps {
     toggleMenu: () => void;
 }
 
-const SidebarContent = ({
+const DesktopSidebar = ({
     isExpanded,
     pathname,
     walletConnected,
     walletInfo,
     handleWalletClick,
     toggleMenu
-}: SidebarContentProps) => {
+}: DesktopSidebarProps) => {
     const krc20Items = navItems.filter(item => item.category === 'krc20');
     const krc721Items = navItems.filter(item => item.category === 'krc721');
     const utilityItems = navItems.filter(item => item.category === 'utility');
@@ -212,66 +232,90 @@ const SidebarContent = ({
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
-            <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-2 p-1 h-6 w-6 rounded-l-none"
-                onClick={toggleMenu}
-            >
-                <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-            </Button>
-
-            <div className="h-16 px-4 flex items-center justify-center md:justify-start mt-4 md:mt-0">
-                <div className="flex items-center space-x-2 overflow-hidden">
-                    <div className="relative w-8 h-8 shrink-0">
+            <div className="h-16 px-4 flex items-center justify-center md:justify-start mt-2 mb-2">
+                <div className="flex items-center">
+                    <div className="relative w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                         <Image
                             src="/logo.png"
                             alt="Astro World"
                             fill
-                            className="object-contain"
+                            className="object-contain p-1.5"
                         />
                     </div>
-                    <span className={`font-bold text-lg whitespace-nowrap transition-opacity duration-300
-                        ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                        Astro World
-                    </span>
+                    <AnimatePresence>
+                        {isExpanded && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="font-bold text-lg whitespace-nowrap ml-3"
+                            >
+                                Astro World
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
-            <div className="px-2">
-                <ThemeToggle />
-            </div>
+            <ThemeToggle type="sidebar" expanded={isExpanded} />
 
             <div className="flex-1 px-2 py-4 space-y-6 overflow-hidden">
                 {mainItems.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                         {mainItems.map((item) => renderNavItem(item, pathname, isExpanded))}
                     </div>
                 )}
 
                 {krc20Items.length > 0 && (
-                    <div className="space-y-2">
-                        <div className={`px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                            KRC-20
-                        </div>
+                    <div className="space-y-1">
+                        <AnimatePresence>
+                            {isExpanded && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                >
+                                    KRC-20
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         {krc20Items.map((item) => renderNavItem(item, pathname, isExpanded))}
                     </div>
                 )}
 
                 {krc721Items.length > 0 && (
-                    <div className="space-y-2">
-                        <div className={`px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                            KRC-721
-                        </div>
+                    <div className="space-y-1">
+                        <AnimatePresence>
+                            {isExpanded && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                >
+                                    KRC-721
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         {krc721Items.map((item) => renderNavItem(item, pathname, isExpanded))}
                     </div>
                 )}
 
                 {utilityItems.length > 0 && (
-                    <div className="space-y-2">
-                        <div className={`px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                            Utility
-                        </div>
+                    <div className="space-y-1">
+                        <AnimatePresence>
+                            {isExpanded && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                >
+                                    Utility
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         {utilityItems.map((item) => renderNavItem(item, pathname, isExpanded))}
                     </div>
                 )}
@@ -287,22 +331,32 @@ const SidebarContent = ({
                             <div className="shrink-0">
                                 <Power className={`w-5 h-5 ${walletConnected ? 'text-green-500' : 'text-muted-foreground'}`} />
                             </div>
-                            <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
-                                ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                                {walletConnected ? 'Connected' : 'Connect Wallet'}
-                            </span>
+                            <AnimatePresence>
+                                {isExpanded && (
+                                    <motion.span
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -10 }}
+                                        className="ml-3 whitespace-nowrap"
+                                    >
+                                        {walletConnected ? 'Connected' : 'Connect Wallet'}
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </button>
-                    {walletConnected && walletInfo && (
-                        <div className={`px-2 mt-1 text-sm transition-opacity duration-300
-                            ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                    {walletConnected && walletInfo && isExpanded && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="px-2 mt-1 text-sm"
+                        >
                             <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
-                            {isExpanded && (
-                                <div className="text-xs text-muted-foreground truncate">
-                                    {walletInfo.address}
-                                </div>
-                            )}
-                        </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                                {walletInfo.address}
+                            </div>
+                        </motion.div>
                     )}
                 </div>
             </div>
@@ -310,18 +364,168 @@ const SidebarContent = ({
     );
 };
 
+interface MobileSidebarProps {
+    pathname: string;
+    walletConnected: boolean;
+    walletInfo: { balance: number; address: string } | null;
+    handleWalletClick: () => void;
+    closeMobileMenu: () => void;
+    activeCategory: string | null;
+    toggleCategory: (category: string) => void;
+}
+
+const MobileSidebar = ({
+    pathname,
+    walletConnected,
+    walletInfo,
+    handleWalletClick,
+    closeMobileMenu,
+    activeCategory,
+    toggleCategory
+}: MobileSidebarProps) => {
+    const mainItems = navItems.filter(item => item.category === 'main');
+    const categories = [
+        { id: 'krc20', name: 'KRC-20', items: navItems.filter(item => item.category === 'krc20') },
+        { id: 'krc721', name: 'KRC-721', items: navItems.filter(item => item.category === 'krc721') },
+        { id: 'utility', name: 'Utility', items: navItems.filter(item => item.category === 'utility') }
+    ];
+
+    return (
+        <div className="flex flex-col h-full w-full">
+            <div className="h-16 px-4 flex items-center justify-between mt-2 mb-2">
+                <div className="flex items-center">
+                    <div className="relative w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Image
+                            src="/logo.png"
+                            alt="Astro World"
+                            fill
+                            className="object-contain p-1.5"
+                        />
+                    </div>
+                    <span className="font-bold text-lg whitespace-nowrap ml-3">Astro World</span>
+                </div>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={closeMobileMenu}
+                    className="h-8 w-8 rounded-full"
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+
+            <ThemeToggle type="mobile" />
+
+            <div className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+                {mainItems.length > 0 && (
+                    <div className="space-y-1">
+                        {mainItems.map((item) => (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200
+                                    ${pathname === item.href
+                                        ? 'bg-primary/10 text-primary font-medium'
+                                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                                    }`}
+                                onClick={closeMobileMenu}
+                            >
+                                <div className="flex items-center">
+                                    <div className="shrink-0">{item.icon}</div>
+                                    <span className="ml-3 whitespace-nowrap">{item.name}</span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+
+                {categories.map(category => (
+                    <div key={category.id} className="space-y-1">
+                        <button
+                            className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 bg-muted/50 hover:bg-muted"
+                            onClick={() => toggleCategory(category.id)}
+                        >
+                            <span className="font-medium">{category.name}</span>
+                            <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${activeCategory === category.id ? 'rotate-90' : ''}`} />
+                        </button>
+                        
+                        <AnimatePresence>
+                            {activeCategory === category.id && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden pl-2"
+                                >
+                                    {category.items.map(item => (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 my-1
+                                                ${pathname === item.href
+                                                    ? 'bg-primary/10 text-primary font-medium'
+                                                    : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                                                }`}
+                                            onClick={closeMobileMenu}
+                                        >
+                                            <div className="flex items-center">
+                                                <div className="shrink-0">{item.icon}</div>
+                                                <span className="ml-3 whitespace-nowrap">{item.name}</span>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                ))}
+            </div>
+
+            <div className="px-3 py-4 border-t border-border mt-auto">
+                <button
+                    onClick={() => {
+                        handleWalletClick();
+                        if (!walletConnected) closeMobileMenu();
+                    }}
+                    className={`flex items-center w-full px-3 py-2.5 rounded-lg transition-all duration-200 
+                        ${walletConnected 
+                            ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' 
+                            : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+                >
+                    <div className="flex items-center">
+                        <Power className="w-5 h-5" />
+                        <span className="ml-3 whitespace-nowrap font-medium">
+                            {walletConnected ? 'Connected' : 'Connect Wallet'}
+                        </span>
+                    </div>
+                </button>
+                {walletConnected && walletInfo && (
+                    <div className="px-2 mt-2 text-sm">
+                        <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                            {walletInfo.address}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const renderNavItem = (item: { name: any; icon: any; href: any; category?: string; }, pathname: string, isExpanded: boolean) => {
     const isActive = pathname === item.href;
+    
     return (
         <Link
             key={item.name}
             href={item.href}
-            className={`flex items-center px-2 py-3 rounded-lg transition-all duration-200
+            className={`flex items-center px-2.5 py-2 rounded-lg transition-all duration-200
                 ${isActive
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                 }
-                group/item relative
+                relative group/item
             `}
         >
             <div className="flex items-center justify-between w-full">
@@ -329,15 +533,34 @@ const renderNavItem = (item: { name: any; icon: any; href: any; category?: strin
                     <div className="shrink-0">
                         {item.icon}
                     </div>
-                    <span className={`ml-3 whitespace-nowrap transition-opacity duration-300
-                        ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                        {item.name}
-                    </span>
+                    <AnimatePresence>
+                        {isExpanded && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="ml-3 whitespace-nowrap"
+                            >
+                                {item.name}
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </div>
-                <ChevronRight className={`w-4 h-4 transition-opacity duration-300
-                    ${isExpanded || isActive ? 'opacity-100' : 'opacity-0'}`}
-                />
+                <AnimatePresence>
+                    {isExpanded && isActive && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary mr-1" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
+            {!isExpanded && isActive && (
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full" />
+            )}
         </Link>
     );
 };

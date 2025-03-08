@@ -1,322 +1,281 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
-import { navItems } from '@/components/navigation/NavBar';
-import { motion } from 'framer-motion';
-import { useState, useEffect, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal } from 'react';
-import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import { UrlObject } from 'url';
+import { motion } from 'framer-motion';
+import { navItems } from '@/components/navigation/NavBar';
+import { ArrowRightIcon, TrendingUpIcon, BarChart3Icon, Wallet, Banknote, Box, Eye, LineChart, Star, Lock, Calculator, Coins, Palette } from 'lucide-react';
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState<null | 'krc20' | 'krc721' | 'utility'>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    setIsLoaded(true);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const krc20Items = navItems.filter(item => item.category === 'krc20');
+  const krc721Items = navItems.filter(item => item.category === 'krc721');
+  const utilityItems = navItems.filter(item => item.category === 'utility');
 
-  const krc20Tools = navItems.filter(item => item.category === 'krc20');
-  const krc721Tools = navItems.filter(item => item.category === 'krc721');
-  const utilityTools = navItems.filter(item => item.category === 'utility');
-
-  const MobileSection = ({ title, icon, color, tools }: { title: string; icon: ReactNode; color: string; tools: { href: string | UrlObject; name: ReactNode; icon: ReactNode; }[] }) => (
-    <div className="mb-8">
-      <div className="flex items-center mb-4">
-        <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center mr-3`}>
-          {icon}
-        </div>
-        <h2 className={`text-2xl font-bold ${color.includes('green') ? 'text-green-500' : color.includes('yellow') ? 'text-yellow-500' : 'text-purple-500'}`}>
-          {title}
-        </h2>
-      </div>
-      <div className="space-y-3">
-        {tools.map((tool: { href: string | UrlObject; name: boolean | Key | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; icon: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }, index: number) => (
-          <Link href={tool.href} key={String(tool.name)} className="block">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.3 }}
-              className={`p-4 rounded-xl border ${
-                color.includes('green') 
-                  ? 'border-green-500/20 bg-green-500/5 hover:bg-green-500/10' 
-                  : color.includes('yellow')
-                    ? 'border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10'
-                    : 'border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10'
-              } transition-all duration-300 group`}
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+      <div className="absolute inset-0 bg-grid-small-pattern opacity-5 pointer-events-none"></div>
+      
+      <header className="pt-6 pb-6 px-4 relative overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+        
+        <div className="max-w-5xl mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center"
             >
-              <div className="flex items-center">
-                <div className={`w-8 h-8 rounded-md ${
-                  color.includes('green') 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : color.includes('yellow')
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-purple-500/20 text-purple-400'
-                } flex items-center justify-center mr-3`}>
-                  {tool.icon}
-                </div>
-                <div className="flex-1">
-                  <h3 className={`text-lg font-bold ${
-                    color.includes('green') 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : color.includes('yellow')
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-purple-600 dark:text-purple-400'
-                  }`}>
-                    {tool.name}
-                  </h3>
-                  <p className="text-sm text-foreground/80 dark:text-foreground/70">
-                    {getToolDescription(tool.name as keyof typeof descriptions)}
-                  </p>
-                </div>
-                <ArrowRight className={`w-5 h-5 ${
-                  color.includes('green') 
-                    ? 'text-green-400' 
-                    : color.includes('yellow')
-                      ? 'text-yellow-400'
-                      : 'text-purple-400'
-                } opacity-0 group-hover:opacity-100 transform group-hover:translate-x-1 transition-all`} />
+              <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center shadow-lg mr-4">
+                <Image src="/logo.png" alt="Astro World" width={34} height={34} className="object-contain" />
+              </div>
+              <div>
+                <motion.h1 
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                  className="text-3xl md:text-4xl font-bold"
+                >
+                  Astro World
+                </motion.h1>
+                <motion.p 
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                  className="text-muted-foreground"
+                >
+                  Advanced tools for Kaspa blockchain
+                </motion.p>
               </div>
             </motion.div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Render mobile or desktop layout based on screen size
-  if (isMobile) {
-    return (
-      <div className="px-4 py-6 min-h-screen bg-background">
-        <div className="mb-8">
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto">
-            <Image src="/logo.png" alt="Astro World" width={40} height={40} className="object-contain" />
+            
+            <motion.div 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="flex flex-wrap gap-3"
+            >
+              <Link href="/krc20-tokens" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                <Coins className="w-4 h-4" />
+                <span>KRC-20 Tokens</span>
+              </Link>
+              <Link href="/krc721-tokens" className="inline-flex items-center gap-2 px-4 py-2 bg-background border border-input rounded-lg font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                <Palette className="w-4 h-4" />
+                <span>NFT Collections</span>
+              </Link>
+            </motion.div>
           </div>
-          <h1 className="text-center text-2xl font-bold mt-3">Astro World</h1>
-          <p className="text-center text-sm text-muted-foreground mt-1">Advanced tools for the Kaspa ecosystem</p>
+        </div>
+      </header>
+      
+      <main className="px-4 pb-16 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 mt-6">
+          <FeatureCard 
+            title="KRC-20 Markets"
+            description="Track token prices, market data, and trading volumes in real-time."
+            icon={<TrendingUpIcon />}
+            color="emerald"
+            delay={0.1}
+            href="/krc20-tokens"
+          />
+          
+          <FeatureCard 
+            title="NFT Collections"
+            description="Explore KRC-721 collections, monitor mints and track ownership."
+            icon={<Palette />}
+            color="amber" 
+            delay={0.2}
+            href="/krc721-tokens"
+          />
+          
+          <FeatureCard 
+            title="Wallet Tools"
+            description="Analyze holdings, track performance and monitor transactions."
+            icon={<Wallet />}
+            color="violet"
+            delay={0.3}
+            href="/wallet-profiler"
+          />
         </div>
         
-        <MobileSection 
-          title="KRC-20 Tools" 
-          icon={<svg viewBox="0 0 24 24" className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 16.5c-3.58 0-6.5-2.92-6.5-6.5h3c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5h3c0 3.58-2.92 6.5-6.5 6.5z" />
-          </svg>} 
-          color="bg-green-500/20" 
-          tools={krc20Tools} 
-        />
+        <section className="mb-10">
+          <SectionHeader title="KRC-20 Tools" icon={<Coins className="w-6 h-6" />} color="emerald" />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {krc20Items.map((item, index) => (
+              <ToolCard
+                key={index}
+                name={item.name}
+                icon={item.icon}
+                href={item.href}
+                description={getToolDescription(item.name)}
+                delay={0.05 * index}
+                color="emerald"
+              />
+            ))}
+          </div>
+        </section>
         
-        <MobileSection 
-          title="KRC-721 Tools" 
-          icon={<svg viewBox="0 0 24 24" className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-            <path d="M14 8a2 2 0 100-4 2 2 0 000 4z" />
-            <rect x="2" y="2" width="20" height="20" rx="5" />
-          </svg>} 
-          color="bg-yellow-500/20" 
-          tools={krc721Tools} 
-        />
+        <section className="mb-10">
+          <SectionHeader title="KRC-721 Tools" icon={<Palette className="w-6 h-6" />} color="amber" />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {krc721Items.map((item, index) => (
+              <ToolCard
+                key={index}
+                name={item.name}
+                icon={item.icon}
+                href={item.href}
+                description={getToolDescription(item.name)}
+                delay={0.05 * index}
+                color="amber"
+              />
+            ))}
+          </div>
+        </section>
         
-        <MobileSection 
-          title="Utility Tools" 
-          icon={<svg viewBox="0 0 24 24" className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1m0 0l2 1m-2-1v2.5" />
-            <path d="M4 17l6-3-6-3v6z" />
-            <path d="M20 17l-6-3 6-3v6z" />
-          </svg>} 
-          color="bg-purple-500/20" 
-          tools={utilityTools} 
-        />
-      </div>
-    );
-  }
-
-  // Desktop layout remains unchanged
-  return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
-      <div className="flex flex-col md:flex-row flex-1 w-full">
-        <motion.div 
-          className="relative flex-1 overflow-hidden bg-gradient-to-b from-green-500/20 via-green-600/10 to-green-700/5 border-r border-green-500/20"
-          initial={{ flex: 1 }}
-          animate={{ flex: activeSection === 'krc20' ? 2 : 1 }}
-          onHoverStart={() => setActiveSection('krc20')}
-          onHoverEnd={() => setActiveSection(null)}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        >
-          <div className="h-full w-full p-6 flex flex-col">
-            <div className="flex items-center mb-8">
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mr-4">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 16.5c-3.58 0-6.5-2.92-6.5-6.5h3c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5h3c0 3.58-2.92 6.5-6.5 6.5z" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-green-500">KRC-20 Tools</h2>
+        <section className="mb-10">
+          <SectionHeader title="Utility Tools" icon={<Wallet className="w-6 h-6" />} color="violet" />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {utilityItems.map((item, index) => (
+              <ToolCard
+                key={index}
+                name={item.name}
+                icon={item.icon}
+                href={item.href}
+                description={getToolDescription(item.name)}
+                delay={0.05 * index}
+                color="violet"
+              />
+            ))}
+          </div>
+        </section>
+        
+        <section className="bg-card border border-border rounded-xl p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h2 className="text-xl font-bold mb-2">Ready to dive deeper?</h2>
+              <p className="text-muted-foreground mb-4 md:mb-0">Explore our full suite of tools and unlock the power of Kaspa analytics.</p>
             </div>
             
-            <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {krc20Tools.map((tool, index) => (
-                <motion.div 
-                  key={tool.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * index, duration: 0.5 }}
-                >
-                  <Link href={tool.href} className="block">
-                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 hover:bg-green-500/10 transition-all duration-300 border border-green-500/20 group">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-md bg-green-500/20 flex items-center justify-center mr-4 text-green-400">
-                          {tool.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-green-600 dark:text-green-400 group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">{tool.name}</h3>
-                          <p className="text-green-700/90 dark:text-green-300/90 text-sm mt-1">{getToolDescription(tool.name as keyof typeof descriptions)}</p>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-green-400 opacity-0 group-hover:opacity-100 transform group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-            
-            <div className={`absolute inset-0 pointer-events-none ${activeSection === 'krc20' ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}>
-              <div className="absolute bottom-0 right-0 w-72 h-72 bg-green-500/20 rounded-full filter blur-3xl transform translate-x-1/3 translate-y-1/3" />
-              <div className="absolute top-1/4 left-1/4 w-48 h-48 bg-green-400/10 rounded-full filter blur-3xl animate-pulse duration-5000" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link href="/wallet-profiler" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors justify-center">
+                <Wallet className="w-4 h-4" />
+                <span>Analyze Wallet</span>
+              </Link>
+              <Link href="/charts" className="inline-flex items-center gap-2 px-4 py-2 bg-background border border-input rounded-lg font-medium hover:bg-accent hover:text-accent-foreground transition-colors justify-center">
+                <BarChart3Icon className="w-4 h-4" />
+                <span>View Charts</span>
+              </Link>
             </div>
           </div>
-        </motion.div>
-
-        <motion.div 
-          className="relative flex-1 overflow-hidden bg-gradient-to-b from-yellow-500/20 via-yellow-600/10 to-yellow-700/5 border-r border-yellow-500/20"
-          initial={{ flex: 1 }}
-          animate={{ flex: activeSection === 'krc721' ? 2 : 1 }}
-          onHoverStart={() => setActiveSection('krc721')}
-          onHoverEnd={() => setActiveSection(null)}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        >
-          <div className="h-full w-full p-6 flex flex-col">
-            <div className="flex items-center mb-8">
-              <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mr-4">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-                  <path d="M14 8a2 2 0 100-4 2 2 0 000 4z" />
-                  <rect x="2" y="2" width="20" height="20" rx="5" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-yellow-500">KRC-721 Tools</h2>
-            </div>
-            
-            <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {krc721Tools.map((tool, index) => (
-                <motion.div 
-                  key={tool.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * index + 0.2, duration: 0.5 }}
-                >
-                  <Link href={tool.href} className="block">
-                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 hover:bg-yellow-500/10 transition-all duration-300 border border-yellow-500/20 group">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-md bg-yellow-500/20 flex items-center justify-center mr-4 text-yellow-400">
-                          {tool.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-yellow-600 dark:text-yellow-400 group-hover:text-yellow-700 dark:group-hover:text-yellow-300 transition-colors">{tool.name}</h3>
-                          <p className="text-yellow-700/90 dark:text-yellow-300/90 text-sm mt-1">{getToolDescription(tool.name as keyof typeof descriptions)}</p>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-yellow-400 opacity-0 group-hover:opacity-100 transform group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-            
-            <div className={`absolute inset-0 pointer-events-none ${activeSection === 'krc721' ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}>
-              <div className="absolute top-0 right-0 w-72 h-72 bg-yellow-500/20 rounded-full filter blur-3xl transform translate-x-1/3 -translate-y-1/3" />
-              <div className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-yellow-400/10 rounded-full filter blur-3xl animate-pulse duration-5000" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          className="relative flex-1 overflow-hidden bg-gradient-to-b from-purple-500/20 via-purple-600/10 to-purple-700/5"
-          initial={{ flex: 1 }}
-          animate={{ flex: activeSection === 'utility' ? 2 : 1 }}
-          onHoverStart={() => setActiveSection('utility')}
-          onHoverEnd={() => setActiveSection(null)}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        >
-          <div className="h-full w-full p-6 flex flex-col">
-            <div className="flex items-center mb-8">
-              <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center mr-4">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1m0 0l2 1m-2-1v2.5" />
-                  <path d="M4 17l6-3-6-3v6z" />
-                  <path d="M20 17l-6-3 6-3v6z" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-purple-500">Utility Tools</h2>
-            </div>
-            
-            <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {utilityTools.map((tool, index) => (
-                <motion.div 
-                  key={tool.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * index + 0.4, duration: 0.5 }}
-                >
-                  <Link href={tool.href} className="block">
-                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 hover:bg-purple-500/10 transition-all duration-300 border border-purple-500/20 group">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-md bg-purple-500/20 flex items-center justify-center mr-4 text-purple-400">
-                          {tool.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-purple-600 dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">{tool.name}</h3>
-                          <p className="text-purple-700/90 dark:text-purple-300/90 text-sm mt-1">{getToolDescription(tool.name as keyof typeof descriptions)}</p>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-purple-400 opacity-0 group-hover:opacity-100 transform group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-            
-            <div className={`absolute inset-0 pointer-events-none ${activeSection === 'utility' ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}>
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-500/20 rounded-full filter blur-3xl transform -translate-x-1/3 translate-y-1/3" />
-              <div className="absolute top-1/4 right-1/4 w-48 h-48 bg-purple-400/10 rounded-full filter blur-3xl animate-pulse duration-5000" />
-            </div>
-          </div>
-        </motion.div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
 
-const descriptions = {
-  'Home': 'Return to the Astro World dashboard',
-  'KRC-20': 'Browse and analyze KRC-20 tokens with real-time market data',
-  'Charts': 'Interactive price charts with multiple timeframes and indicators',
-  'KRC Arb Calc': 'Calculate arbitrage opportunities across Kaspa exchanges',
-  'KRC-721 Explorer': 'Browse and explore KRC-721 NFT collections with analytics',
-  'Mint Watcher': 'Track new NFT mints and launches in real-time with alerts',
-  'Wallet Profiler': 'Analyze wallet holdings, history, and portfolio performance',
-  'Profit/Loss': 'Track trading performance and tax liabilities across tokens',
-  'Airdrop Tool': 'Manage and distribute token airdrops to multiple addresses',
-  'Wallet Explorer': 'Explore wallet addresses, balance history, and transactions',
-  'Secret Tools': 'Advanced tools for power users in the Kaspa ecosystem',
-};
+function SectionHeader({ title, icon, color }: { title: string, icon: React.ReactNode, color: string }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4 }}
+      className="flex items-center mb-4"
+    >
+      <div className={`w-9 h-9 mr-3 rounded-lg bg-${color}-500/10 flex items-center justify-center text-${color}-500`}>
+        {icon}
+      </div>
+      <h2 className="text-xl font-bold">{title}</h2>
+    </motion.div>
+  );
+}
 
-function getToolDescription(toolName: keyof typeof descriptions) {
-  return descriptions[toolName] || `Access ${toolName.toLowerCase()} features and analytics`;
+function FeatureCard({ title, description, icon, color, delay, href }: { 
+  title: string, 
+  description: string, 
+  icon: React.ReactNode, 
+  color: string,
+  delay: number,
+  href: string
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4 }}
+    >
+      <Link href={href} className="block h-full">
+        <div className={`h-full bg-${color}-500/5 hover:bg-${color}-500/10 border border-${color}-500/20 backdrop-blur-sm rounded-xl p-5 transition-all duration-300 group`}>
+          <div className={`w-10 h-10 mb-3 rounded-lg bg-${color}-500/10 flex items-center justify-center text-${color}-500`}>
+            {icon}
+          </div>
+          <h3 className={`text-lg font-bold mb-2 group-hover:text-${color}-600 dark:group-hover:text-${color}-400 transition-colors`}>{title}</h3>
+          <p className="text-muted-foreground text-sm mb-3">{description}</p>
+          <div className={`flex items-center text-${color}-500 font-medium text-sm`}>
+            <span>Explore</span>
+            <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+function ToolCard({ name, icon, href, description, delay, color }: { 
+  name: string, 
+  icon: React.ReactNode, 
+  href: string, 
+  description: string,
+  delay: number,
+  color: string
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.3 }}
+    >
+      <Link href={href} className="block h-full">
+        <div className={`h-full bg-card hover:bg-${color}-500/5 backdrop-blur-sm border border-border hover:border-${color}-500/30 rounded-lg p-4 transition-all duration-300 group`}>
+          <div className="flex items-center mb-2">
+            <div className={`w-8 h-8 rounded-lg bg-${color}-500/10 flex items-center justify-center text-${color}-500 mr-3`}>
+              {icon}
+            </div>
+            <h3 className="font-bold">{name}</h3>
+          </div>
+          
+          <p className="text-xs text-muted-foreground mb-2">{description}</p>
+          
+          <div className={`flex items-center text-${color}-500 text-xs font-medium`}>
+            <span className="group-hover:underline">Open Tool</span>
+            <ArrowRightIcon className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+function getToolDescription(name: string) {
+  const descriptions: Record<string, string> = {
+    'Home': 'Return to the Astro World dashboard',
+    'KRC-20': 'Browse and analyze KRC-20 tokens with real-time market data',
+    'Charts': 'Interactive price charts with multiple timeframes and indicators',
+    'KRC Arb Calc': 'Calculate arbitrage opportunities across Kaspa exchanges',
+    'KRC-721 Explorer': 'Browse and explore KRC-721 NFT collections with analytics',
+    'Mint Watcher': 'Track new NFT mints and launches in real-time with alerts',
+    'Wallet Profiler': 'Analyze wallet holdings, history, and portfolio performance',
+    'Profit/Loss': 'Track trading performance and tax liabilities across tokens',
+    'Airdrop Tool': 'Manage and distribute token airdrops to multiple addresses',
+    'Wallet Explorer': 'Explore wallet addresses, balance history, and transactions',
+    'Secret Tools': 'Advanced tools for power users in the Kaspa ecosystem'
+  };
+
+  return descriptions[name] || `Access ${name.toLowerCase()} features and analytics`;
 }

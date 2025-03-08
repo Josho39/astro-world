@@ -595,25 +595,7 @@ const MintWatcher = () => {
         <Card className="w-full border">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 md:p-6 rounded-t-xl">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                        <div>
-                            <h1 className="text-xl md:text-2xl font-bold tracking-tight">NFT Mint Watcher</h1>
-                            <p className="text-sm text-muted-foreground mt-1">Track real-time NFT mints across collections</p>
-                        </div>
-                        <Button
-                            onClick={refreshData}
-                            disabled={isRefreshing}
-                            size="sm"
-                            className="bg-primary/90 hover:bg-primary"
-                        >
-                            {isRefreshing ? (
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                            )}
-                            Refresh
-                        </Button>
-                    </div>
+
 
                     <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <div className="relative w-full sm:w-64">
@@ -625,11 +607,27 @@ const MintWatcher = () => {
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
+
                         </div>
                         <TabsList className="grid grid-cols-2 w-full sm:w-48">
                             <TabsTrigger value="recent-mints" className="rounded-l-md">Recent Mints</TabsTrigger>
                             <TabsTrigger value="holders" className="rounded-r-md">Holders</TabsTrigger>
                         </TabsList>
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                            <Button
+                                onClick={refreshData}
+                                disabled={isRefreshing}
+                                size="sm"
+                                className="bg-primary/90 hover:bg-primary"
+                            >
+                                {isRefreshing ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                )}
+                                Refresh
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
