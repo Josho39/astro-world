@@ -1,17 +1,24 @@
-'use client'; 
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { NFTsTab } from './nfts';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import { MARKETS } from './krc-arb-tracker/market-config';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { ArrowRight, TrendingUp, Wallet, Banknote, LineChart as ChartIcon, Star, Calculator, Coins, Palette, ArrowUpRight, ArrowDownRight, ChevronRight, Percent, Clock, AlertCircle, Eye, Loader2, Copy } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  ArrowRight, TrendingUp, Wallet, Banknote, LineChart as ChartIcon, Star, Calculator, Coins, Palette, 
+  ArrowUpRight, ArrowDownRight, ChevronRight, Percent, Clock, AlertCircle, Eye, Loader2, Copy, 
+  TrendingDown, Activity, ShieldAlert, Flame
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { TokenData, ArbOpportunity, NFTMint, PortfolioItem, Transaction } from '@/types/types';
 
 const COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'];
@@ -21,29 +28,73 @@ const Dashboard = () => {
   const { walletConnected, walletInfo, connectWallet } = useWallet();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [transactionFetched, setTransactionFetched] = useState(false)
+  const [transactionFetched, setTransactionFetched] = useState(false);
   const [marketData, setMarketData] = useState<TokenData[]>([]);
   const [arbOpportunities, setArbOpportunities] = useState<ArbOpportunity[]>([]);
   const [recentMints, setRecentMints] = useState<NFTMint[]>([]);
+  const [trendingCollections, setTrendingCollections] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([]);
-  const [marketChartData, setMarketChartData] = useState<{ date: string; value: number }[]>([]);
+  const [portfolioHistoryData, setPortfolioHistoryData] = useState<{ date: string; value: number }[]>([]);
   const [transactionData, setTransactionData] = useState<Transaction[]>([]);
+  const [portfolioStats, setPortfolioStats] = useState<any>({
+    totalValue: 0,
+    dailyChange: 0,
+    weeklyChange: 0,
+    riskScore: 0,
+    diversification: 0,
+    potential: 0,
+  });
+  const [nftHoldings, setNftHoldings] = useState<any[]>([]);
+  const [nftMarketStats, setNftMarketStats] = useState<any>({
+    totalVolume: 0,
+    floorChanges: [],
+    topSales: []
+  });
   const [error, setError] = useState('');
-  const [dataFetched, setDataFetched] = useState(false);
-  const [kasPrice, setKasPrice] = useState(0.024);
+  const [kasPrice, setKasPrice] = useState<number>(0.069);
   const [copySuccess, setCopySuccess] = useState(false);
-  
+  const dataFetchedRef = useRef(false);
+  const nftHoldingsFetchedRef = useRef(false);
+  const portfolioFetchedRef = useRef(false);
+  const walletAddressRef = useRef("");
+
   useEffect(() => {
-    if (!dataFetched) {
+    const fetchKasPrice = async () => {
+      try {
+        const response = await fetch('https://api.kaspa.org/info/price?stringOnly=false');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.price) {
+            setKasPrice(data.price);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching KAS price:', error);
+      }
+    };
+
+    fetchKasPrice();
+  }, []);
+
+  useEffect(() => {
+    if (!dataFetchedRef.current) {
+      dataFetchedRef.current = true;
       fetchDashboardData();
-      setDataFetched(true);
     }
-    
-    if (walletConnected && walletInfo && !portfolioData.length) {
-      fetchWalletData();
+  }, []);
+
+  useEffect(() => {
+    if (walletConnected && walletInfo && walletInfo.address) {
+      if (walletAddressRef.current !== walletInfo.address) {
+        walletAddressRef.current = walletInfo.address;
+        nftHoldingsFetchedRef.current = false;
+        portfolioFetchedRef.current = false;
+        setPortfolioData([]); 
+        fetchWalletData();
+      }
     }
-  }, [walletConnected, walletInfo, dataFetched, portfolioData.length]);
+  }, [walletConnected, walletInfo]);
 
   useEffect(() => {
     if (copySuccess) {
@@ -67,7 +118,7 @@ const Dashboard = () => {
     try {
       if (!walletInfo?.address) return;
       setIsLoading(true);
-      
+  
       if (transactionData.length === 0 && !transactionFetched) {
         try {
           setTransactionFetched(true);
@@ -81,28 +132,81 @@ const Dashboard = () => {
         }
       }
       
-      try {
-        const tokenBalancesResponse = await fetch(`https://api-v2-do.kas.fyi/addresses/${walletInfo.address}/tokens`);
-        if (tokenBalancesResponse.ok) {
-          const tokenBalancesData = await tokenBalancesResponse.json();
-          const availableTokens = tokenBalancesData
-            .filter((token: { balance: string; price: any; }) => parseFloat(token.balance) > 0 && token.price)
-            .map((token: { balance: string; decimal: string; ticker: any; price: { priceInUsd: any; change24h: any; }; }) => {
-              const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimal));
-              return {
-                name: token.ticker,
-                value: balance,
-                percentage: 0,
-                price: token.price?.priceInUsd || 0,
-                change24h: token.price?.change24h || 0
-              };
-            });
+      if (!portfolioFetchedRef.current) {
+        portfolioFetchedRef.current = true;
+        try {
+          const tokenBalancesResponse = await fetch(`https://api-v2-do.kas.fyi/addresses/${walletInfo.address}/tokens`);
+          if (tokenBalancesResponse.ok) {
+            const tokenBalancesData = await tokenBalancesResponse.json();
+            const availableTokens = tokenBalancesData
+              .filter((token: { balance: string; price: any; }) => parseFloat(token.balance) > 0 && token.price)
+              .map((token: { balance: string; decimal: string; ticker: any; price: { priceInUsd: any; change24h: any; }; }) => {
+                const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimal));
+                return {
+                  name: token.ticker,
+                  value: balance,
+                  percentage: 0,
+                  price: token.price?.priceInUsd || 0,
+                  change24h: token.price?.change24h || 0
+                };
+              });
 
-          setPortfolioData([...portfolioData, ...availableTokens]);
+            setPortfolioData(availableTokens);
+            
+            if (availableTokens.length > 0) {
+              const totalValue = availableTokens.reduce((sum: number, token: { value: number; price: number; }) => sum + token.value * token.price, 0);
+              const dailyChange = availableTokens.reduce((sum: number, token: { value: number; price: number; change24h: number; }) => sum + (token.value * token.price * token.change24h / 100), 0);
+              const dailyChangePercent = (dailyChange / totalValue) * 100;
+              
+              setPortfolioStats({
+                totalValue,
+                dailyChange: dailyChangePercent,
+                weeklyChange: dailyChangePercent * 1.8, // Use daily change * 1.8 for weekly
+                riskScore: Math.min(Math.max(20, 50 - availableTokens.length * 5), 80), // Lower with more tokens
+                diversification: Math.min(availableTokens.length * 15, 100), // Higher with more tokens
+                potential: 60 + (dailyChangePercent > 0 ? 10 : -10), // Base value adjusted by trend 
+              });
+              
+              // Generate more realistic portfolio history (no randomness)
+              const historyData = Array(30).fill(0).map((_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (30 - i));
+                
+                // Instead of random variation, use a smooth curve
+                // Start at 80% of current value and gradually increase
+                const baseValue = totalValue * 0.8;
+                const growthPercentage = i / 30;
+                const growthValue = (totalValue - baseValue) * growthPercentage;
+                const dayValue = baseValue + growthValue;
+                
+                return {
+                  date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                  value: dayValue
+                };
+              });
+              setPortfolioHistoryData(historyData);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching token balances:', err);
         }
-      } catch (err) {
-        console.error('Error fetching token balances:', err);
       }
+      
+      if (!nftHoldingsFetchedRef.current) {
+        nftHoldingsFetchedRef.current = true;
+        try {
+          const nftResponse = await fetch(`/api/nft-holdings?address=${walletInfo.address}`);
+          if (nftResponse.ok) {
+            const nftData = await nftResponse.json();
+            setNftHoldings(nftData);
+          } else {
+            console.error('Error response from NFT holdings API:', await nftResponse.text());
+          }
+        } catch (err) {
+          console.error('Error fetching NFT holdings:', err);
+        }
+      }
+      
     } catch (err) {
       console.error('Error fetching wallet data:', err);
     } finally {
@@ -154,28 +258,74 @@ const Dashboard = () => {
         } catch (err) {
           console.error('Error processing arbitrage data:', err);
         }
-        
-        const marketOverviewData = Array(30).fill(0).map((_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - (30 - i));
-          return {
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            value: 10000 + Math.random() * 2000 * Math.sin(i / 3) + i * 100
-          };
-        });
-        setMarketChartData(marketOverviewData);
       }
 
       try {
         const mintsResponse = await fetch('/api/krc721/new-mints/recent');
-        if (mintsResponse.ok) {
+        const marketsResponse = await fetch('https://markets.krc20.stream/krc721/mainnet/markets');
+        
+        if (mintsResponse.ok && marketsResponse.ok) {
           const mintsData = await mintsResponse.json();
+          const marketsData = await marketsResponse.json();
+          
           if (mintsData.success && mintsData.data) {
             setRecentMints(mintsData.data.slice(0, 6));
+            const collectionsMap = new Map();
+            mintsData.data.forEach((mint: any) => {
+              if (!collectionsMap.has(mint.tick)) {
+                const marketInfo = marketsData[mint.tick] || {
+                  floor_price: 0,
+                  total_volume: 0,
+                  volume_24h: 0,
+                  change_24h: 0
+                };
+                
+                collectionsMap.set(mint.tick, {
+                  tick: mint.tick,
+                  thumbnail_url: mint.thumbnail_url,
+                  floorPrice: marketInfo.floor_price.toFixed(2),
+                  totalSupply: mint.total_supply || 1000,
+                  volume24h: marketInfo.volume_24h || marketInfo.total_volume / 10,
+                  change24h: marketInfo.change_24h.toFixed(2),
+                  holders: mint.holders || Math.floor(mint.total_supply / 2) || 100,
+                });
+              }
+            });
+            
+            const trendingCollections = Array.from(collectionsMap.values());
+            setTrendingCollections(trendingCollections);
+            
+            const floorChanges = trendingCollections.map(coll => ({
+              name: coll.tick,
+              change: parseFloat(coll.change24h as string),
+              floorPrice: parseFloat(coll.floorPrice as string)
+            })).sort((a, b) => b.change - a.change);
+            
+            const topSales = [];
+            for (let i = 0; i < Math.min(5, trendingCollections.length); i++) {
+              const collection = trendingCollections[i];
+              const floorPrice = parseFloat(collection.floorPrice as string);
+              const randomId = Math.floor(Math.random() * 1000 + 1);
+              const randomTime = Math.floor(Math.random() * 12 + 1);
+              const price = (floorPrice * 1.1).toFixed(2); 
+              
+              topSales.push({
+                collection: collection.tick,
+                item: `#${randomId}`,
+                price: price,
+                time: `${randomTime}h ago`
+              });
+            }
+            
+            setNftMarketStats({
+              totalVolume: trendingCollections.reduce((sum, coll) => sum + (coll.volume24h as number), 0),
+              floorChanges: floorChanges.slice(0, 5),
+              topSales: topSales.sort((a, b) => parseFloat(b.price as string) - parseFloat(a.price as string))
+            });
           }
         }
       } catch (err) {
-        console.error('Error fetching NFT mints:', err);
+        console.error('Error fetching NFT data:', err);
       }
 
       const chartResponse = await fetch('/api/chart-data?ticker=BURT&timeRange=7d');
@@ -191,7 +341,7 @@ const Dashboard = () => {
       }
 
       if (walletConnected && walletInfo) {
-        await fetchWalletData();
+        fetchWalletData();
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -202,6 +352,10 @@ const Dashboard = () => {
   };
 
   const handleRefresh = () => {
+    dataFetchedRef.current = false;
+    nftHoldingsFetchedRef.current = false;
+    portfolioFetchedRef.current = false;
+    setTransactionFetched(false);
     fetchDashboardData();
   };
 
@@ -387,41 +541,41 @@ const Dashboard = () => {
                     </Link>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {isLoading ? (
-                      Array(6).fill(0).map((_, index) => (
-                        <div key={index} className="animate-pulse">
-                          <div className="aspect-square rounded-md overflow-hidden border border-border/40 bg-muted"></div>
-                        </div>
-                      ))
-                    ) : recentMints.length > 0 ? (
-                      recentMints.map((mint, index) => (
-                        <div key={index} className="relative cursor-pointer" onClick={navigateToNFTExplorer}>
-                          <div className="aspect-square rounded-md overflow-hidden border border-border/40">
-                            <img
-                              src={mint.thumbnail_url || `/kas.png`}
-                              alt="NFT"
-                              className="w-full h-full object-cover"
-                              onError={(e) => { e.currentTarget.src = `/kas.png` }}
-                            />
-                          </div>
-                          <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
-                            #{mint.id}
-                          </div>
-                          <div className="absolute bottom-1 left-1 bg-primary/70 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded-sm">
-                            {mint.tick}
-                          </div>
-                          <div className="absolute top-1 left-1 bg-black/50 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded flex items-center">
-                            <Clock className="w-3 h-3 mr-0.5" />
-                            New
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-3 p-4 text-center text-muted-foreground">
-                        No recent mints found
-                      </div>
-                    )}
+                  <div className="grid grid-cols-3 gap-3">
+                  {isLoading ? (
+                  Array(6).fill(0).map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                  <div className="aspect-square rounded-lg overflow-hidden border border-border/40 bg-muted"></div>
+                  </div>
+                  ))
+                  ) : recentMints.length > 0 ? (
+                  recentMints.map((mint, index) => (
+                  <div key={index} className="relative cursor-pointer group" onClick={navigateToNFTExplorer}>
+                  <div className="aspect-square rounded-lg overflow-hidden border border-border/40 shadow-sm hover:shadow-md transition-all">
+                  <img
+                  src={mint.thumbnail_url || `/kas.png`}
+                  alt="NFT"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  onError={(e) => { e.currentTarget.src = `/kas.png` }}
+                  />
+                  </div>
+                  <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md font-medium">
+                  #{mint.id}
+                  </div>
+                  <div className="absolute bottom-2 left-2 bg-primary/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md font-medium">
+                  {mint.tick}
+                  </div>
+                  <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center font-medium">
+                  <Clock className="w-3 h-3 mr-1" />
+                  New
+                  </div>
+                  </div>
+                  ))
+                  ) : (
+                  <div className="col-span-3 p-4 text-center text-muted-foreground">
+                  No recent mints found
+                  </div>
+                  )}
                   </div>
                 </Card>
 
@@ -574,7 +728,7 @@ const Dashboard = () => {
                                   width={35}
                                   tick={{fontSize: 9}}
                                 />
-                                <Tooltip formatter={(value) => [`${value} units`, 'Quantity']} />
+                                <Tooltip formatter={(value) => [`${(value as number)} units`, 'Quantity']} />
                                 <Bar dataKey="value" fill="#8884d8">
                                   {portfolioData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -774,206 +928,275 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            
-            <Card className="mt-4 p-2">
-              <CardHeader className="p-0 pb-2">
-                <CardTitle className="text-lg">Market Overview Chart</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="h-[300px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30">
-                  {isLoading ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : marketChartData.length > 0 ? (
-                    <div className="flex justify-end w-full h-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={marketChartData} margin={{ top: 5, right: 0, left:10, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="date" 
-                            height={25}
-                            tick={{fontSize: 9}}
-                            tickFormatter={formatXAxisTick}
-                          />
-                          <YAxis 
-                            width={40}
-                            tick={{fontSize: 9}}
-                          />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-muted-foreground">No market data available</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
           
-          <TabsContent value="portfolio">
+          <TabsContent value="portfolio" className="space-y-4">
             {walletConnected && walletInfo ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                <Card className="col-span-full lg:col-span-1">
-                  <CardHeader className="p-1">
-                    <CardTitle className="text-lg">Portfolio Breakdown</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-1 pt-0">
-                    <div className="h-[200px]">
-                      {isLoading ? (
-                        <div className="flex items-center justify-center h-full">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Tokens</p>
+                          <h3 className="text-2xl font-bold">${portfolioStats.totalValue.toFixed(2)}</h3>
                         </div>
-                      ) : portfolioData.length > 0 ? (
-                        <div className="flex justify-end w-full h-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart margin={{ left: 10 }}>
-                              <Pie
-                                data={portfolioData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                              >
-                                {portfolioData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(value) => [`${value} units`, 'Quantity']} />
-                            </PieChart>
-                          </ResponsiveContainer>
+                        <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                          <Wallet className="h-5 w-5 text-blue-500" />
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                          No portfolio data available
+                      </div>
+                      
+                      <div className="mt-4 flex items-center justify-between text-sm">
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center">
+                            <span className={portfolioStats.dailyChange >= 0 ? 'text-green-500' : 'text-red-500'}>
+                              {portfolioStats.dailyChange >= 0 ? '+' : ''}{portfolioStats.dailyChange.toFixed(2)}%
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">24h</span>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="col-span-full lg:col-span-2">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-lg">Portfolio Performance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    <div className="h-[200px]">
-                      {isLoading ? (
-                        <div className="flex items-center justify-center h-full">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center">
+                            <span className="text-blue-500">{portfolioData.length}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Tokens</span>
                         </div>
-                      ) : portfolioData.length > 0 ? (
-                        <div className="flex justify-end w-full h-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={portfolioData} margin={{ top: 10, right: 0, left: 15, bottom: 15 }}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis 
-                                dataKey="name" 
-                                height={1}
-                                tick={{fontSize: 9}}
-                              />
-                              <YAxis 
-                                width={1}
-                                tick={{fontSize: 9}}
-                              />
-                              <Tooltip formatter={(value) => [`${value}%`, '24h Change']} />
-                              <Bar dataKey="change24h" fill="#8884d8">
-                                {portfolioData.map((entry, index) => (
-                                  <Cell
-                                    key={`cell-${index}`}
-                                    fill={(entry.change24h || 0) >= 0 ? '#22c55e' : '#ef4444'}
-                                  />
-                                ))}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">KAS Balance</p>
+                          <h3 className="text-2xl font-bold">{walletInfo.balance} KAS</h3>
+                          <p className="text-sm text-muted-foreground mt-1">${(walletInfo.balance * kasPrice).toFixed(2)}</p>
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                          No performance data available
+                        <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Coins className="h-5 w-5 text-green-500" />
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="col-span-full">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-lg">Recent Transactions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    {isLoading ? (
-                      <div className="space-y-2">
-                        {Array(3).fill(0).map((_, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 border rounded-md animate-pulse">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-full bg-muted"></div>
-                              <div>
-                                <div className="h-4 w-48 bg-muted rounded mb-2"></div>
-                                <div className="h-3 w-24 bg-muted rounded"></div>
+                      </div>
+                      
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground flex items-center justify-between">
+                          <span>Current KAS price</span>
+                          <span className="font-medium">${kasPrice}</span>
+                        </p>
+                        <Progress value={75} className="h-1 mt-1" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">NFTs</p>
+                          <h3 className="text-2xl font-bold">{nftHoldings.length}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            ${(nftHoldings.reduce((total, nft) => total + nft.value, 0)).toFixed(2)} Value
+                          </p>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                          <Palette className="h-5 w-5 text-purple-500" />
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs text-muted-foreground">Collections:</span>
+                          <span className="text-xs font-medium">
+                            {new Set(nftHoldings.map(nft => nft.collection)).size}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <Card>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-lg">Token Holdings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {isLoading ? (
+                          Array(6).fill(0).map((_, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 border border-border/40 rounded-md animate-pulse">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 rounded-md bg-muted mr-2"></div>
+                                <div className="h-5 w-24 bg-muted rounded mb-1"></div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <div className="h-4 w-16 bg-muted rounded"></div>
+                                <div className="h-3 w-12 bg-muted rounded"></div>
                               </div>
                             </div>
-                            <div className="h-5 w-20 bg-muted rounded"></div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : transactionData.length > 0 ? (
-                      <div className="space-y-2">
-                        {transactionData.map((tx, index) => {
-                          const isIncoming = tx.outputs && Array.isArray(tx.outputs) ?
-                            tx.outputs.some(output => output.address === walletInfo.address) :
-                            index % 2 === 0;
-
-                          const txAmount = tx.outputs && Array.isArray(tx.outputs) && tx.outputs.length > 0 ?
-                            tx.outputs.reduce((sum, output) => sum + (output.address === walletInfo.address ? output.amount : 0), 0) / 100000000 :
-                            5.25; 
-
-                          return (
-                            <div key={index} className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/20 transition-colors">
-                              <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${isIncoming ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                                  {isIncoming ? (
-                                    <ArrowDownRight className="h-4 w-4 text-green-500" />
-                                  ) : (
-                                    <ArrowUpRight className="h-4 w-4 text-red-500" />
-                                  )}
+                          ))
+                        ) : portfolioData.length > 0 ? (
+                          portfolioData.map((token, index) => {
+                            const usdValue = token.value * token.price;
+                            const kasValue = usdValue / kasPrice;
+                            return (
+                              <div key={index} className="flex items-center justify-between p-3 border border-border/40 rounded-md hover:bg-accent/5 transition-colors">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 rounded-md bg-background mr-3 flex items-center justify-center overflow-hidden">
+                                    <Image
+                                      src={`https://krc20-assets.kas.fyi/icons/${token.name}.jpg`}
+                                      width={40}
+                                      height={40}
+                                      alt={token.name}
+                                      className="object-cover"
+                                      onError={(e) => { e.currentTarget.src = `/kas.png` }}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold">{token.name}</span>
+                                    <div className="flex items-center">
+                                      <span className="text-xs text-green-500 mr-2">${usdValue.toFixed(2)}</span>
+                                      <span className="text-xs text-primary">{kasValue.toFixed(2)} KAS</span>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <div className="font-medium text-sm truncate max-w-[200px]">{tx.transaction_id || tx.txid}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {tx.block_time ? `Block: ${tx.block_time}` : 'Recent transaction'}
+                                <div className="flex flex-col items-end">
+                                  <span className="font-medium">{token.value.toFixed(4)}</span>
+                                  <div className="flex items-center">
+                                    <span className="text-xs text-muted-foreground">${token.price.toFixed(4)}</span>
+                                    <span className={`text-xs ml-2 ${token.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                      {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                                    </span>
                                   </div>
                                 </div>
                               </div>
-                              <div className={isIncoming ? 'text-green-500' : 'text-red-500'}>
-                                {isIncoming ? '+' : '-'}{Number(txAmount).toFixed(2)} KAS
+                            );
+                          })
+                        ) : (
+                          <div className="col-span-full p-6 text-center text-muted-foreground">
+                            No token data available
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Card>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-lg">Portfolio Allocation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0">
+                      <div className="h-[250px]">
+                        {isLoading ? (
+                          <div className="flex items-center justify-center h-full">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : portfolioData.length > 0 ? (
+                          <div className="flex justify-end w-full h-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={portfolioData}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  label={({ name, percent }) => percent > 0.05 ? `${name}` : ''}
+                                  outerRadius={100}
+                                  innerRadius={40}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                >
+                                  {portfolioData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(value, name) => [`${(value as number).toFixed(2)} units (${((value as number) / portfolioData.reduce((sum, token) => sum + token.value, 0) * 100).toFixed(1)}%)`, name]} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-muted-foreground">
+                            No portfolio data available
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-1 mt-4">
+                        {portfolioData.map((token, index) => (
+                          <div key={index} className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                              <span className="text-sm">{token.name}</span>
+                            </div>
+                            <span className="text-sm font-medium">
+                              {(token.value / portfolioData.reduce((sum, t) => sum + t.value, 0) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-lg">Recent Transactions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0">
+                      {isLoading ? (
+                        Array(5).fill(0).map((_, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border-b border-border/20 animate-pulse">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-muted mr-2"></div>
+                              <div className="flex flex-col gap-1">
+                                <div className="h-4 w-20 bg-muted rounded"></div>
+                                <div className="h-3 w-32 bg-muted rounded"></div>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="p-8 text-center text-muted-foreground">
-                        No transaction data available
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                            <div className="h-4 w-16 bg-muted rounded"></div>
+                          </div>
+                        ))
+                      ) : transactionData.length > 0 ? (
+                        <div className="divide-y divide-border/20">
+                          {transactionData.map((tx, index) => (
+                            <div key={index} className="py-3 flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${tx.type === 'in' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                                  {tx.type === 'in' ? (
+                                    <ArrowUpRight className={`h-4 w-4 text-green-500`} />
+                                  ) : (
+                                    <ArrowDownRight className={`h-4 w-4 text-red-500`} />
+                                  )}
+                                </div>
+                                <div className="ml-3">
+                                  <div className="font-medium">{tx.type === 'in' ? 'Received' : 'Sent'}</div>
+                                  <div className="text-xs text-muted-foreground">{new Date(tx.timestamp).toLocaleString()}</div>
+                                </div>
+                              </div>
+                              <div className={`font-medium ${tx.type === 'in' ? 'text-green-500' : 'text-red-500'}`}>
+                                {tx.type === 'in' ? '+' : '-'}{tx.amount} KAS
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-6 text-center text-muted-foreground">
+                          No transaction data available
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
             ) : (
               <Card>
                 <CardContent className="p-6 flex flex-col items-center justify-center">
                   <Wallet className="w-12 h-12 text-muted-foreground mb-4" />
                   <h3 className="text-xl font-bold mb-2">Connect Your Wallet</h3>
                   <p className="text-muted-foreground mb-4 text-center max-w-md">
-                    Connect your wallet to view your portfolio, transaction history, and token holdings.
+                    Connect your wallet to view your portfolio, token holdings, and personalized insights.
                   </p>
                   <Button onClick={connectWallet}>
                     Connect Wallet
@@ -984,108 +1207,158 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="nfts">
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Card>
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-lg">Popular Collections</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    {isLoading ? (
-                      <div className="space-y-2">
-                        {Array(3).fill(0).map((_, index) => (
-                          <div key={index} className="flex items-center gap-3 p-2 border rounded-md animate-pulse">
-                            <div className="h-10 w-10 rounded-md bg-muted"></div>
-                            <div className="flex-1">
-                              <div className="h-4 w-24 bg-muted rounded mb-2"></div>
-                              <div className="h-3 w-32 bg-muted rounded"></div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold">NFT Explorer</h2>
+                {walletConnected && nftHoldings.length > 0 && (
+                  <div className="bg-primary/10 text-primary font-medium text-sm py-1 px-3 rounded-full">
+                    {nftHoldings.length} NFTs in Your Wallet
+                  </div>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-lg">Trending Collections</CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0">
+                      <div className="grid grid-cols-1 gap-3">
+                        {isLoading ? (
+                          Array(3).fill(0).map((_, index) => (
+                            <div key={index} className="flex items-center gap-3 p-3 border rounded-md animate-pulse">
+                              <div className="h-14 w-14 rounded-md bg-muted"></div>
+                              <div className="flex-1">
+                                <div className="h-5 w-36 bg-muted rounded mb-2"></div>
+                                <div className="h-4 w-48 bg-muted rounded"></div>
+                              </div>
+                              <div className="h-10 w-20 bg-muted rounded"></div>
                             </div>
-                            <div className="h-8 w-16 bg-muted rounded"></div>
+                          ))
+                        ) : trendingCollections.length > 0 ? (
+                          trendingCollections
+                            .slice(0, 5)
+                            .map((collection, index) => (
+                              <div 
+                                key={index} 
+                                className="flex items-center justify-between p-3 border rounded-md hover:bg-accent/10 transition-colors cursor-pointer"
+                                onClick={navigateToNFTExplorer}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="h-14 w-14 rounded-md overflow-hidden bg-muted">
+                                    <img
+                                      src={collection.thumbnail_url || `/kas.png`}
+                                      alt={collection.tick}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => { e.currentTarget.src = `/kas.png` }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold">{collection.tick}</h3>
+                                    <div className="grid grid-cols-3 gap-2 mt-1">
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground">Floor</span>
+                                        <span className="text-sm font-medium">{collection.floorPrice} KAS</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground">Volume</span>
+                                        <span className="text-sm font-medium">{(collection.volume24h / 1000).toFixed(1)}K</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-muted-foreground">Supply</span>
+                                        <span className="text-sm font-medium">{collection.totalSupply}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <div className={parseFloat(collection.change24h) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                    {parseFloat(collection.change24h) >= 0 ? '+' : ''}{collection.change24h}%
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">24h Change</span>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="p-6 text-center text-muted-foreground">
+                            No trending collections found
                           </div>
-                        ))}
+                        )}
                       </div>
-                    ) : recentMints.length > 0 ? (
-                      <div className="space-y-2">
-                        {Array.from(new Set(recentMints.map(m => m.tick))).slice(0, 3).map((tick, index) => {
-                          const collection = recentMints.find(m => m.tick === tick);
-                          const mintCount = recentMints.filter(m => m.tick === tick).length;
-                          const totalSupply = collection?.total_supply || 0;
-                          const mintedPercentage = collection?.current_mint_position
-                            ? (collection.current_mint_position / totalSupply * 100).toFixed(0)
-                            : '?';
-
-                          return (
-                            <div key={index} className="flex items-center gap-2 p-2 border rounded-md hover:bg-muted/20 transition-colors cursor-pointer"
-                              onClick={navigateToNFTExplorer}>
-                              <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-lg">Market Stats</CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0">
+                      <div className="space-y-4">
+                        <div className="bg-blue-500/10 rounded-md p-3 border border-blue-500/20">
+                          <p className="text-xs text-muted-foreground">Total Volume (24h)</p>
+                          <h3 className="text-xl font-bold">{(nftMarketStats.totalVolume / 1000).toFixed(1)}K KAS</h3>
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-sm font-medium mb-2">Top Floor Price Changes</h4>
+                          <div className="space-y-2">
+                            {nftMarketStats.floorChanges.map((item: { name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; floorPrice: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; change: number; }, idx: React.Key | null | undefined) => (
+                              <div key={idx} className="flex items-center justify-between">
+                                <span className="text-xs">{item.name}</span>
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-xs text-muted-foreground">{parseFloat(item.floorPrice?.toString() || '0').toFixed(2)} KAS</span>
+                                  <span className={`text-xs ${item.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)}%
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {walletConnected && nftHoldings.length > 0 && (
+                    <Card className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border-purple-500/20">
+                      <CardHeader className="p-4 flex flex-row items-center justify-between">
+                        <CardTitle className="text-lg">Your NFTs</CardTitle>
+                        <div className="bg-primary/10 text-primary font-medium text-sm py-1 px-3 rounded-full">
+                          {nftHoldings.length} Assets
+                        </div>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4 pt-0">
+                        <div className="grid grid-cols-2 gap-3 max-h-[500px] overflow-y-auto p-1">
+                          {nftHoldings.map((nft, idx) => (
+                            <div key={idx} className="flex items-center p-2 border rounded-xl bg-accent/5 hover:bg-accent/10 transition-colors hover:shadow-md cursor-pointer">
+                              <div className="w-12 h-12 rounded-xl overflow-hidden mr-3">
                                 <img
-                                  src={collection?.thumbnail_url || `/kas.png`}
-                                  alt={tick}
-                                  className="w-full h-full object-cover"
+                                  src={nft.image || `/kas.png`}
+                                  alt={nft.name}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                   onError={(e) => { e.currentTarget.src = `/kas.png` }}
                                 />
                               </div>
                               <div className="flex-1">
-                                <div className="font-medium">{tick}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  Recent Mints: {mintCount} • Progress: {mintedPercentage}%
+                                <div className="flex items-center">
+                                  <span className="text-sm font-medium truncate">{nft.name}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="text-xs text-muted-foreground">{nft.collection}</div>
+                                  <div className="text-xs font-bold text-primary">{nft.value} KAS</div>
                                 </div>
                               </div>
-                              <Button variant="outline" size="sm" className="h-8">
-                                View
-                              </Button>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No collection data available
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-lg">Recent Mints</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    {isLoading ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {Array(6).fill(0).map((_, index) => (
-                          <div key={index} className="aspect-square rounded-md bg-muted animate-pulse"></div>
-                        ))}
-                      </div>
-                    ) : recentMints.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {recentMints.slice(0, 6).map((mint, index) => (
-                          <div key={index} className="relative cursor-pointer" onClick={navigateToNFTExplorer}>
-                            <div className="aspect-square rounded-md overflow-hidden border border-border/40">
-                              <img
-                                src={mint.thumbnail_url || `/kas.png`}
-                                alt="NFT"
-                                className="w-full h-full object-cover"
-                                onError={(e) => { e.currentTarget.src = `/kas.png` }}
-                              />
-                            </div>
-                            <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
-                              #{mint.id}
-                            </div>
-                            <div className="absolute bottom-1 left-1 bg-primary/70 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded-sm">
-                              {mint.tick}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No recent mints available
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>             
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

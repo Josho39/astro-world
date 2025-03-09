@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export enum TxType {
   SIGN_TX,
   SEND_KASPA,
@@ -42,6 +44,9 @@ export interface PortfolioItem {
 }
 
 export interface Transaction {
+  type: string;
+  timestamp: string | number | Date;
+  amount: ReactNode;
   transaction_id?: string;
   txid?: string;
   block_time?: number;
