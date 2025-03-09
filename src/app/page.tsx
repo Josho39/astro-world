@@ -28,9 +28,10 @@ const Dashboard = () => {
   const [recentMints, setRecentMints] = useState<NFTMint[]>([]);
   const [trendingCollections, setTrendingCollections] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
+  const [selectedTokens, setSelectedTokens] = useState<Record<string, boolean>>({});
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([]);
   const [transactionData, setTransactionData] = useState<Transaction[]>([]);
-  const [portfolioStats, setPortfolioStats] = useState<any>({
+  const [portfolioStats, setPortfolioStats] = useState({
     totalValue: 0,
     dailyChange: 0,
     weeklyChange: 0,
@@ -53,7 +54,7 @@ const Dashboard = () => {
   const [nftTopCollections, setNftTopCollections] = useState<any[]>([]);
   const [nftTop24hCollections, setNftTop24hCollections] = useState<any[]>([]);
   const [error, setError] = useState('');
-  const [kasPrice, setKasPrice] = useState<number>(0.069);
+  const [kasPrice, setKasPrice] = useState(0.069);
   const [copySuccess, setCopySuccess] = useState(false);
   const dataFetchedRef = useRef(false);
   const nftHoldingsFetchedRef = useRef(false);
@@ -107,6 +108,26 @@ const Dashboard = () => {
     }
   }, [copySuccess]);
 
+  useEffect(() => {
+    if (portfolioData.length > 0) {
+      const totalUsdValue = portfolioData.reduce((sum, token) => sum + (token.value * token.price), 0);
+      
+      setPortfolioStats(prev => ({
+        ...prev,
+        totalValue: totalUsdValue
+      }));
+      
+      const initialSelectedState: Record<string, boolean> = {};
+      portfolioData.forEach(token => {
+        initialSelectedState[token.name] = true;
+      });
+      
+      if (Object.keys(selectedTokens).length === 0) {
+        setSelectedTokens(initialSelectedState);
+      }
+    }
+  }, [portfolioData]);
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -144,12 +165,14 @@ const Dashboard = () => {
               .filter((token: { balance: string; price: any; }) => parseFloat(token.balance) > 0 && token.price)
               .map((token: { balance: string; decimal: string; ticker: any; price: { priceInUsd: any; change24h: any; }; }) => {
                 const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimal));
+                const usdValue = balance * (token.price?.priceInUsd || 0);
                 return {
                   name: token.ticker,
                   value: balance,
                   percentage: 0,
                   price: token.price?.priceInUsd || 0,
-                  change24h: token.price?.change24h || 0
+                  change24h: token.price?.change24h || 0,
+                  usdValue: usdValue
                 };
               });
 
@@ -182,7 +205,7 @@ const Dashboard = () => {
     }
   };
 
-  const fetchNftSalesData = async (ticker = 'NACHO') => {
+  const fetchNftSalesData = async (ticker: string = 'NACHO') => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/nft-sales?ticker=${ticker}`);
@@ -289,14 +312,14 @@ const Dashboard = () => {
 
             const floorChanges = trendingCollections.map(coll => ({
               name: coll.tick,
-              change: parseFloat(coll.change24h as string),
-              floorPrice: parseFloat(coll.floorPrice as string)
+              change: parseFloat(coll.change24h),
+              floorPrice: parseFloat(coll.floorPrice)
             })).sort((a, b) => b.change - a.change);
 
             const topSales = [];
             for (let i = 0; i < Math.min(5, trendingCollections.length); i++) {
               const collection = trendingCollections[i];
-              const floorPrice = parseFloat(collection.floorPrice as string);
+              const floorPrice = parseFloat(collection.floorPrice);
               const randomId = Math.floor(Math.random() * 1000 + 1);
               const randomTime = Math.floor(Math.random() * 12 + 1);
               const price = (floorPrice * 1.1).toFixed(1);
@@ -310,9 +333,9 @@ const Dashboard = () => {
             }
 
             setNftMarketStats({
-              totalVolume: trendingCollections.reduce((sum, coll) => sum + (coll.volume24h as number), 0),
+              totalVolume: trendingCollections.reduce((sum, coll) => sum + coll.volume24h, 0),
               floorChanges: floorChanges.slice(0, 5),
-              topSales: topSales.sort((a, b) => parseFloat(b.price as string) - parseFloat(a.price as string))
+              topSales: topSales.sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
             });
           }
         }
@@ -362,6 +385,29 @@ const Dashboard = () => {
 
   const formatXAxisTick = (value: string) => {
     return value.length > 3 ? value.substring(0, 3) : value;
+  };
+
+  const toggleTokenSelection = (tokenName: string) => {
+    setSelectedTokens(prev => ({
+      ...prev,
+      [tokenName]: !prev[tokenName]
+    }));
+  };
+
+  const getFilteredPortfolioData = (): PortfolioItem[] => {
+    return portfolioData.filter(token => selectedTokens[token.name]);
+  };
+
+  const getPortfolioDataForChart = () => {
+    const filteredData = getFilteredPortfolioData();
+    return filteredData.map(token => ({
+      ...token,
+      value: token.usdValue
+    }));
+  };
+
+  const getTotalSelectedValue = (): number => {
+    return getFilteredPortfolioData().reduce((sum, token) => sum + (token.value * token.price), 0);
   };
 
   return (
@@ -721,7 +767,10 @@ const Dashboard = () => {
                                   width={35}
                                   tick={{ fontSize: 9 }}
                                 />
-                                <Tooltip formatter={(value) => [`${(value as number)} units`, 'Quantity']} />
+                                <Tooltip formatter={(value: number, name: string, props: any) => {
+                                  const token = portfolioData.find(t => t.name === props.payload.name);
+                                  return token ? [`${value} units (${(token.price * value).toFixed(2)})`, 'Quantity'] : [`${value} units`, 'Quantity'];
+                                }} />
                                 <Bar dataKey="value" fill="#8884d8">
                                   {portfolioData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1065,7 +1114,7 @@ const Dashboard = () => {
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
                                 <Pie
-                                  data={portfolioData}
+                                  data={getPortfolioDataForChart()}
                                   cx="50%"
                                   cy="50%"
                                   labelLine={false}
@@ -1075,11 +1124,15 @@ const Dashboard = () => {
                                   fill="#8884d8"
                                   dataKey="value"
                                 >
-                                  {portfolioData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  {getPortfolioDataForChart().map((entry, index) => (
+                                    <Cell 
+                                      key={`cell-${index}`} 
+                                      fill={COLORS[index % COLORS.length]} 
+                                      opacity={selectedTokens[entry.name] ? 1 : 0.3}
+                                    />
                                   ))}
                                 </Pie>
-                                <Tooltip formatter={(value, name) => [`${(value as number).toFixed(1)} units (${((value as number) / portfolioData.reduce((sum, token) => sum + token.value, 0) * 100).toFixed(1)}%)`, name]} />
+                                <Tooltip formatter={(value: number, name: string) => [`${value.toFixed(2)} (${((value / getTotalSelectedValue()) * 100).toFixed(1)}%)`, name]} />
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
@@ -1091,17 +1144,27 @@ const Dashboard = () => {
                       </div>
 
                       <div className="space-y-1 mt-4">
-                        {portfolioData.map((token, index) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                              <span className="text-sm">{token.name}</span>
+                        {portfolioData.map((token, index) => {
+                          const usdValue = token.value * token.price;
+                          const percentage = (usdValue / portfolioStats.totalValue * 100).toFixed(1);
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              className={`flex items-center justify-between cursor-pointer p-1 rounded-md ${selectedTokens[token.name] ? 'bg-accent/10' : 'opacity-50'}`}
+                              onClick={() => toggleTokenSelection(token.name)}
+                            >
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                <span className="text-sm">{token.name}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <span className="text-sm mr-2">${usdValue.toFixed(1)}</span>
+                                <span className="text-sm font-medium">{percentage}%</span>
+                              </div>
                             </div>
-                            <span className="text-sm font-medium">
-                              {(token.value / portfolioData.reduce((sum, t) => sum + t.value, 0) * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
@@ -1217,7 +1280,7 @@ const Dashboard = () => {
                                 stroke="#82ca9d"
                                 tick={{ fontSize: 10 }}
                               />
-                              <Tooltip formatter={(value, name) => {
+                              <Tooltip formatter={(value: number, name: string) => {
                                 if (name === 'volume') return [`${value} KAS`, 'Volume'];
                                 return [`${value}`, 'Transactions'];
                               }} />
@@ -1374,7 +1437,7 @@ const Dashboard = () => {
                           ))
                         ) : trendingCollections.length > 0 ? (
                           trendingCollections
-                            .sort((a, b) => parseFloat(b.floorPrice as string) - parseFloat(a.floorPrice as string))
+                            .sort((a, b) => parseFloat(b.floorPrice) - parseFloat(a.floorPrice))
                             .slice(0, 10)
                             .map((collection, index) => (
                               <div key={index} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5 transition-colors cursor-pointer" onClick={navigateToNFTExplorer}>
@@ -1389,10 +1452,10 @@ const Dashboard = () => {
                                 <div className="flex-1">
                                   <div className="font-bold">{collection.tick}</div>
                                   <div className="text-xs text-muted-foreground">
-                                    Volume: {((collection.volume24h as number) / 1000).toFixed(1)}K KAS
+                                    Volume: {((collection.volume24h) / 1000).toFixed(1)}K KAS
                                   </div>
                                 </div>
-                                <div className={parseFloat(collection.change24h as string) >= 0 ? 'text-green-500 text-sm font-medium' : 'text-red-500 text-sm font-medium'}>
+                                <div className={parseFloat(collection.change24h) >= 0 ? 'text-green-500 text-sm font-medium' : 'text-red-500 text-sm font-medium'}>
                                   {collection.floorPrice} KAS
                                 </div>
                               </div>
