@@ -36,6 +36,7 @@ export interface NFTMint {
 }
 
 export interface PortfolioItem {
+  [x: string]: any;
   name: string;
   value: number;
   percentage: number;

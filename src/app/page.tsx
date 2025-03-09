@@ -111,17 +111,17 @@ const Dashboard = () => {
   useEffect(() => {
     if (portfolioData.length > 0) {
       const totalUsdValue = portfolioData.reduce((sum, token) => sum + (token.value * token.price), 0);
-      
+
       setPortfolioStats(prev => ({
         ...prev,
         totalValue: totalUsdValue
       }));
-      
+
       const initialSelectedState: Record<string, boolean> = {};
       portfolioData.forEach(token => {
         initialSelectedState[token.name] = true;
       });
-      
+
       if (Object.keys(selectedTokens).length === 0) {
         setSelectedTokens(initialSelectedState);
       }
@@ -1125,9 +1125,9 @@ const Dashboard = () => {
                                   dataKey="value"
                                 >
                                   {getPortfolioDataForChart().map((entry, index) => (
-                                    <Cell 
-                                      key={`cell-${index}`} 
-                                      fill={COLORS[index % COLORS.length]} 
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={COLORS[index % COLORS.length]}
                                       opacity={selectedTokens[entry.name] ? 1 : 0.3}
                                     />
                                   ))}
@@ -1147,10 +1147,10 @@ const Dashboard = () => {
                         {portfolioData.map((token, index) => {
                           const usdValue = token.value * token.price;
                           const percentage = (usdValue / portfolioStats.totalValue * 100).toFixed(1);
-                          
+
                           return (
-                            <div 
-                              key={index} 
+                            <div
+                              key={index}
                               className={`flex items-center justify-between cursor-pointer p-1 rounded-md ${selectedTokens[token.name] ? 'bg-accent/10' : 'opacity-50'}`}
                               onClick={() => toggleTokenSelection(token.name)}
                             >
