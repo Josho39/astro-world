@@ -1,4 +1,4 @@
-'use client';
+'use client'; 
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -6,19 +6,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import { MARKETS } from './krc-arb-tracker/market-config';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell
-} from 'recharts';
-import {
-  ArrowRight, TrendingUp, Wallet, Banknote, LineChart as ChartIcon,
-  Star, Calculator, Coins, Palette, ArrowUpRight, ArrowDownRight, ChevronRight,
-  Percent, Clock, AlertCircle, Eye, Loader2
-} from 'lucide-react';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { ArrowRight, TrendingUp, Wallet, Banknote, LineChart as ChartIcon, Star, Calculator, Coins, Palette, ArrowUpRight, ArrowDownRight, ChevronRight, Percent, Clock, AlertCircle, Eye, Loader2, Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TokenData, ArbOpportunity, NFTMint, PortfolioItem, Transaction } from '@/types/types';
 
 const COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'];
 
@@ -27,109 +21,92 @@ const Dashboard = () => {
   const { walletConnected, walletInfo, connectWallet } = useWallet();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  interface TokenData {
-    ticker: string;
-    logoUrl?: string;
-    price?: number;
-    change24h?: number;
-    volumeUsd?: number;
-    marketCap?: number;
-    totalHolders?: number;
-    creationDate?: string;
-  }
-
-  interface ArbOpportunity {
-    token: string;
-    percentage: number;
-    fromExchange: string;
-    toExchange: string;
-  }
-
-  interface NFTMint {
-    tick: string;
-    id: number;
-    timestamp: string;
-    thumbnail_url?: string;
-    current_mint_position?: number;
-    total_supply?: number;
-  }
-
-  interface PortfolioItem {
-    name: string;
-    value: number;
-    percentage: number;
-    price: number;
-    change24h: number;
-  }
-
-  interface Transaction {
-    transaction_id?: string;
-    txid?: string;
-    block_time?: number;
-    outputs?: Array<{
-      address: string;
-      amount: number;
-    }>;
-  }
-
+  const [transactionFetched, setTransactionFetched] = useState(false)
   const [marketData, setMarketData] = useState<TokenData[]>([]);
   const [arbOpportunities, setArbOpportunities] = useState<ArbOpportunity[]>([]);
   const [recentMints, setRecentMints] = useState<NFTMint[]>([]);
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([]);
+  const [marketChartData, setMarketChartData] = useState<{ date: string; value: number }[]>([]);
   const [transactionData, setTransactionData] = useState<Transaction[]>([]);
   const [error, setError] = useState('');
   const [dataFetched, setDataFetched] = useState(false);
-
+  const [kasPrice, setKasPrice] = useState(0.024);
+  const [copySuccess, setCopySuccess] = useState(false);
+  
   useEffect(() => {
     if (!dataFetched) {
       fetchDashboardData();
       setDataFetched(true);
     }
     
-    if (walletConnected && walletInfo) {
+    if (walletConnected && walletInfo && !portfolioData.length) {
       fetchWalletData();
     }
-  }, [walletConnected, walletInfo, dataFetched]);
+  }, [walletConnected, walletInfo, dataFetched, portfolioData.length]);
+
+  useEffect(() => {
+    if (copySuccess) {
+      const timer = setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copySuccess]);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(true);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
 
   const fetchWalletData = async () => {
     try {
-      if (!walletInfo) return;
-      const txResponse = await fetch(`/api/transactions?address=${walletInfo.address}`);
-      if (txResponse.ok) {
-        const txData = await txResponse.json();
-        setTransactionData(txData.slice(0, 5));
+      if (!walletInfo?.address) return;
+      setIsLoading(true);
+      
+      if (transactionData.length === 0 && !transactionFetched) {
+        try {
+          setTransactionFetched(true);
+          const txResponse = await fetch(`/api/transactions?address=${walletInfo.address}`);
+          if (txResponse.ok) {
+            const txData = await txResponse.json();
+            setTransactionData(txData.slice(0, 5));
+          }
+        } catch (err) {
+          console.error('Error fetching transaction data:', err);
+        }
       }
       
-      const tokenBalancesResponse = await fetch(`https://api-v2-do.kas.fyi/addresses/${walletInfo.address}/tokens`);
-      if (tokenBalancesResponse.ok) {
-        const tokenBalancesData = await tokenBalancesResponse.json();
+      try {
+        const tokenBalancesResponse = await fetch(`https://api-v2-do.kas.fyi/addresses/${walletInfo.address}/tokens`);
+        if (tokenBalancesResponse.ok) {
+          const tokenBalancesData = await tokenBalancesResponse.json();
+          const availableTokens = tokenBalancesData
+            .filter((token: { balance: string; price: any; }) => parseFloat(token.balance) > 0 && token.price)
+            .map((token: { balance: string; decimal: string; ticker: any; price: { priceInUsd: any; change24h: any; }; }) => {
+              const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimal));
+              return {
+                name: token.ticker,
+                value: balance,
+                percentage: 0,
+                price: token.price?.priceInUsd || 0,
+                change24h: token.price?.change24h || 0
+              };
+            });
 
-        const portfolioItems = [{
-          name: 'KAS',
-          value: walletInfo?.balance || 0,
-          percentage: 0,
-          price: 0.024,
-          change24h: 0
-        }];
-
-        const availableTokens = tokenBalancesData
-          .filter((token: { balance: string; price: any; }) => parseFloat(token.balance) > 0 && token.price)
-          .map((token: { balance: string; decimal: string; ticker: any; price: { priceInUsd: any; change24h: any; }; }) => {
-            const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimal));
-            return {
-              name: token.ticker,
-              value: balance,
-              percentage: 0,
-              price: token.price?.priceInUsd || 0,
-              change24h: token.price?.change24h || 0
-            };
-          });
-
-        setPortfolioData([...portfolioItems, ...availableTokens]);
+          setPortfolioData([...portfolioData, ...availableTokens]);
+        }
+      } catch (err) {
+        console.error('Error fetching token balances:', err);
       }
     } catch (err) {
       console.error('Error fetching wallet data:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,6 +154,16 @@ const Dashboard = () => {
         } catch (err) {
           console.error('Error processing arbitrage data:', err);
         }
+        
+        const marketOverviewData = Array(30).fill(0).map((_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (30 - i));
+          return {
+            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            value: 10000 + Math.random() * 2000 * Math.sin(i / 3) + i * 100
+          };
+        });
+        setMarketChartData(marketOverviewData);
       }
 
       try {
@@ -226,6 +213,10 @@ const Dashboard = () => {
     router.push('/krc721-tokens');
   };
 
+  const formatXAxisTick = (value: string) => {
+    return value.length > 3 ? value.substring(0, 3) : value;
+  };
+
   return (
     <div className="min-h-screen max-h-screen h-screen bg-gradient-to-b from-background to-background/95 flex flex-col overflow-hidden">
       <header className="py-2 px-3 relative overflow-hidden border-b border-border/30">
@@ -233,7 +224,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center">
               <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center shadow-md mr-2">
-                <Image src="/logo.png" alt="Astro World" width={20} height={20} className="object-contain" />
+                <Image src="/logo.png" alt="Astro World" width={30} height={30} className="object-contain" />
               </div>
               <div>
                 <h1 className="text-lg font-bold">Astro World</h1>
@@ -289,7 +280,7 @@ const Dashboard = () => {
                     </Link>
                   </div>
 
-                  <div className="space-y-1.5 overflow-auto max-h-[calc(100vh-300px)]">
+                  <div className="space-y-1.5 overflow-auto flex-1">
                     {isLoading ? (
                       Array(5).fill(0).map((_, index) => (
                         <div key={index} className="flex items-center justify-between p-2 border border-border/40 rounded-md animate-pulse">
@@ -299,7 +290,6 @@ const Dashboard = () => {
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <div className="h-4 w-12 bg-muted rounded"></div>
-                            <div className="h-3 w-8 bg-muted rounded"></div>
                           </div>
                         </div>
                       ))
@@ -307,84 +297,81 @@ const Dashboard = () => {
                       marketData.map((token, index) => (
                         <div key={index} onClick={() => navigateToChart(token.ticker)} className="flex items-center justify-between p-2 border border-border/40 rounded-md hover:bg-accent/30 transition-colors cursor-pointer">
                           <div className="flex items-center">
-                            <div className="w-7 h-7 rounded-md bg-background mr-2 flex items-center justify-center overflow-hidden">
-                              <Image
-                                src={token.logoUrl || `/logo.png`}
-                                width={28}
-                                height={28}
-                                alt={token.ticker}
-                                className="object-cover"
-                                onError={(e) => { e.currentTarget.src = `/logo.png` }}
-                              />
-                            </div>
-                            <span className="font-medium">{token.ticker}</span>
+                          <div className="w-7 h-7 rounded-md bg-background mr-2 flex items-center justify-center overflow-hidden">
+                          <Image
+                          src={`https://krc20-assets.kas.fyi/icons/${token.ticker}.jpg`}
+                          width={28}
+                          height={28}
+                          alt={token.ticker}
+                          className="object-cover"
+                          onError={(e) => { e.currentTarget.src = `/kas.png` }}
+                          />
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span>${token.price?.toFixed(6) || "0.000000"}</span>
-                            <span className={((token.change24h || 0) >= 0 ? 'text-green-500' : 'text-red-500') + ' flex items-center text-xs'}>
-                              {(token.change24h || 0) >= 0 ?
-                                <ArrowUpRight className="w-3 h-3 mr-0.5" /> :
-                                <ArrowDownRight className="w-3 h-3 mr-0.5" />
-                              }
-                              {Math.abs(token.change24h || 0).toFixed(2)}%
-                            </span>
+                          <span className="font-medium">{token.ticker}</span>
                           </div>
+                          <div className="flex items-end">
+                          <span>${token.price?.toFixed(8) || "0.00000000"}</span>
+                        </div>
                         </div>
                       ))
                     )}
                   </div>
-                </Card>
-
-                <Card className="p-2 overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-bold flex items-center">
-                      <ChartIcon className="w-4 h-4 mr-1.5 text-blue-500" />
-                      Featured Chart
-                    </h3>
-                    <Link href="/charts" className="text-xs text-muted-foreground hover:text-primary flex items-center">
-                      View Charts <ChevronRight className="w-3 h-3 ml-1" />
-                    </Link>
-                  </div>
-
-                  <div className="h-[150px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30">
-                    {isLoading ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : chartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                          <XAxis dataKey="date" tickFormatter={(tick) => tick.substring(0, 5)} stroke="#9ca3af" />
-                          <YAxis domain={['auto', 'auto']} stroke="#9ca3af" />
-                          <Tooltip />
-                          <Area
-                            type="monotone"
-                            dataKey="price"
-                            stroke="#3b82f6"
-                            fillOpacity={1}
-                            fill="url(#colorPrice)"
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-muted-foreground">No chart data available</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center"><Clock className="w-3 h-3 mr-1" /> Updated recently</span>
-                    <Link href="/charts?ticker=BURT" className="text-primary hover:underline flex items-center">
-                      View BURT Charts <ArrowRight className="w-3 h-3 ml-1" />
-                    </Link>
-                  </div>
+                  
+                  <Card className="mt-2 p-2 overflow-hidden">
+                    <h4 className="text-xs font-semibold mb-2">Market Chart</h4>
+                    <div className="h-[160px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30">
+                      {isLoading ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : chartData.length > 0 ? (
+                        <div className="flex justify-end w-full h-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 17, bottom: 3 }}>
+                              <defs>
+                                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                              <XAxis 
+                                dataKey="date" 
+                                tickFormatter={formatXAxisTick}
+                                stroke="#9ca3af" 
+                                height={20}
+                                tick={{fontSize: 9}}
+                              />
+                              <YAxis 
+                                domain={['auto', 'auto']} 
+                                stroke="#9ca3af"
+                                width={35}
+                                tick={{fontSize: 9}}
+                              />
+                              <Tooltip />
+                              <Area
+                                type="monotone"
+                                dataKey="price"
+                                stroke="#3b82f6"
+                                fillOpacity={1}
+                                fill="url(#colorPrice)"
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-muted-foreground">No chart data available</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-1 text-xs flex items-center justify-between">
+                      <span className="text-muted-foreground flex items-center"><Clock className="w-3 h-3 mr-1" /> Updated recently</span>
+                      <Link href="/charts?ticker=BURT" className="text-primary hover:underline flex items-center">
+                        View BURT Charts <ArrowRight className="w-3 h-3 ml-1" />
+                      </Link>
+                    </div>
+                  </Card>
                 </Card>
               </div>
 
@@ -412,10 +399,10 @@ const Dashboard = () => {
                         <div key={index} className="relative cursor-pointer" onClick={navigateToNFTExplorer}>
                           <div className="aspect-square rounded-md overflow-hidden border border-border/40">
                             <img
-                              src={mint.thumbnail_url || `/logo.png`}
+                              src={mint.thumbnail_url || `/kas.png`}
                               alt="NFT"
                               className="w-full h-full object-cover"
-                              onError={(e) => { e.currentTarget.src = `/logo.png` }}
+                              onError={(e) => { e.currentTarget.src = `/kas.png` }}
                             />
                           </div>
                           <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
@@ -449,7 +436,7 @@ const Dashboard = () => {
                     </Link>
                   </div>
 
-                  <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-350px)]">
+                  <div className="space-y-2 overflow-y-auto flex-1">
                     {isLoading ? (
                       Array(4).fill(0).map((_, index) => (
                         <div key={index} className="flex items-center justify-between p-2 border border-border/40 rounded-md animate-pulse">
@@ -466,12 +453,12 @@ const Dashboard = () => {
                           <div className="flex items-center">
                           <div className="w-7 h-7 rounded-md bg-background mr-2 flex items-center justify-center overflow-hidden">
                             <Image
-                              src={MARKETS[arb.fromExchange]?.iconUrl || `/logo.png`}
+                              src={MARKETS[arb.fromExchange]?.iconUrl || `/kas.png`}
                               width={28}
                               height={28}
                               alt={arb.fromExchange}
                               className="object-cover"
-                              onError={(e) => { e.currentTarget.src = `/logo.png` }}
+                              onError={(e) => { e.currentTarget.src = `/kas.png` }}
                             />
                           </div>
                             <div className="flex flex-col">
@@ -494,21 +481,30 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    <div className="h-[100px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30 mt-1">
+                    <div className="h-[110px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30 mt-1">
                       {isLoading ? (
                         <div className="absolute inset-0 flex items-center justify-center animate-pulse">
                           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
                       ) : arbOpportunities.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={arbOpportunities} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                            <XAxis dataKey="token" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="percentage" fill="#22c55e" label={{ position: 'top', fill: '#22c55e', fontSize: 10 }} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                        <div className="flex justify-end w-full h-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={arbOpportunities} margin={{ top: 0, right: 0, left: 0, bottom: 19}}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                              <XAxis 
+                                dataKey="token" 
+                                height={1}
+                                tick={{fontSize: 9}}
+                              />
+                              <YAxis 
+                                width={35}
+                                tick={{fontSize: 9}}
+                              />
+                              <Tooltip />
+                              <Bar dataKey="percentage" fill="#22c55e" label={{ position: 'top', fill: '#22c55e', fontSize: 8 }} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-muted-foreground">No data to display</span>
@@ -536,7 +532,13 @@ const Dashboard = () => {
                       <div className="bg-violet-500/5 rounded-md p-2 border border-violet-500/20 mb-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Address</span>
-                          <span className="text-xs text-violet-500">Copy</span>
+                          <button 
+                            onClick={() => copyToClipboard(walletInfo.address)}
+                            className={`flex items-center text-xs ${copySuccess ? 'text-green-500' : 'text-violet-500 hover:text-violet-600'}`}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            {copySuccess ? 'Copied!' : 'Copy'}
+                          </button>
                         </div>
                         <div className="font-mono text-xs truncate mt-1">{walletInfo.address}</div>
                       </div>
@@ -549,35 +551,38 @@ const Dashboard = () => {
 
                         <div className="bg-green-500/5 rounded-md p-2 border border-green-500/20">
                           <div className="text-xs text-muted-foreground">USD Value</div>
-                          <div className="text-lg font-bold text-green-500">${(walletInfo.balance * 0.024).toFixed(2)}</div>
+                          <div className="text-lg font-bold text-green-500">${(walletInfo.balance * kasPrice).toFixed(2)}</div>
                         </div>
                       </div>
 
-                      <div className="h-[150px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30 mb-2">
+                      <div className="h-[160px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30 mb-2">
                         {isLoading ? (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                           </div>
                         ) : portfolioData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={portfolioData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={60}
-                                fill="#8884d8"
-                                dataKey="value"
-                              >
-                                {portfolioData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(value) => [`${value} units`, 'Quantity']} />
-                            </PieChart>
-                          </ResponsiveContainer>
+                          <div className="flex justify-end w-full h-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={portfolioData} margin={{ top: 5, right: 0, left: 25, bottom: 1 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                  dataKey="name" 
+                                  height={20}
+                                  tick={{fontSize: 9}}
+                                />
+                                <YAxis 
+                                  width={35}
+                                  tick={{fontSize: 9}}
+                                />
+                                <Tooltip formatter={(value) => [`${value} units`, 'Quantity']} />
+                                <Bar dataKey="value" fill="#8884d8">
+                                  {portfolioData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-muted-foreground">No portfolio data available</span>
@@ -585,7 +590,7 @@ const Dashboard = () => {
                         )}
                       </div>
 
-                      <div className="space-y-2 overflow-auto max-h-[calc(100vh-350px)]">
+                      <div className="space-y-2 overflow-auto flex-1">
                         <h4 className="text-xs font-medium mb-1">Your Tokens</h4>
                         {isLoading ? (
                           Array(3).fill(0).map((_, index) => (
@@ -601,26 +606,36 @@ const Dashboard = () => {
                             </div>
                           ))
                         ) : portfolioData.length > 0 ? (
-                          portfolioData.map((token, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 border border-border/40 rounded-md">
-                              <div className="flex items-center">
-                                <div className="w-7 h-7 rounded-md bg-background mr-2 flex items-center justify-center overflow-hidden">
-                                  <Image
-                                    src={`/logo.png`}
-                                    width={28}
-                                    height={28}
-                                    alt={token.name}
-                                    className="object-cover"
-                                  />
+                          portfolioData.map((token, index) => {
+                            const usdValue = token.value * token.price;
+                            const kasValue = usdValue / kasPrice;
+                            return (
+                              <div key={index} className="flex items-center justify-between p-2 border border-border/40 rounded-md">
+                                <div className="flex items-center">
+                                  <div className="w-7 h-7 rounded-md bg-background mr-2 flex items-center justify-center overflow-hidden">
+                                    <Image
+                                      src={`https://krc20-assets.kas.fyi/icons/${token.name}.jpg`}
+                                      width={28}
+                                      height={28}
+                                      alt={token.name}
+                                      className="object-cover"
+                                      onError={(e) => { e.currentTarget.src = `/kas.png` }}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-sm">{token.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      <span className="text-green-500">${usdValue.toFixed(2)}</span> | <span className="text-primary">{kasValue.toFixed(2)} KAS</span>
+                                    </span>
+                                  </div>
                                 </div>
-                                <span className="font-medium">{token.name}</span>
+                                <div className="flex flex-col items-end">
+                                  <span className="font-mono">{token.value.toFixed(4)}</span>
+                                  <span className="text-xs text-muted-foreground">${token.price.toFixed(4)}</span>
+                                </div>
                               </div>
-                              <div className="flex flex-col items-end">
-                                <span>{token.value.toFixed(4)}</span>
-                                <span className="text-xs text-muted-foreground">${(token.value * token.price).toFixed(2)}</span>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
                           <div className="p-4 text-center text-muted-foreground">
                             No token data available
@@ -712,12 +727,12 @@ const Dashboard = () => {
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full overflow-hidden bg-muted">
                             <Image
-                              src={token.logoUrl || `/logo.png`}
+                              src={`https://krc20-assets.kas.fyi/icons/${token.ticker}.jpg`}
                               width={32}
                               height={32}
                               alt={token.ticker}
                               className="object-cover"
-                              onError={(e) => { e.currentTarget.src = `/logo.png` }}
+                              onError={(e) => { e.currentTarget.src = `/kas.png` }}
                             />
                           </div>
                           <div>
@@ -759,41 +774,82 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+            
+            <Card className="mt-4 p-2">
+              <CardHeader className="p-0 pb-2">
+                <CardTitle className="text-lg">Market Overview Chart</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="h-[300px] bg-muted/20 rounded-md overflow-hidden relative border border-border/30">
+                  {isLoading ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : marketChartData.length > 0 ? (
+                    <div className="flex justify-end w-full h-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={marketChartData} margin={{ top: 5, right: 0, left:10, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="date" 
+                            height={25}
+                            tick={{fontSize: 9}}
+                            tickFormatter={formatXAxisTick}
+                          />
+                          <YAxis 
+                            width={40}
+                            tick={{fontSize: 9}}
+                          />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={2} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-muted-foreground">No market data available</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="portfolio">
             {walletConnected && walletInfo ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 <Card className="col-span-full lg:col-span-1">
-                  <CardHeader className="p-3">
+                  <CardHeader className="p-1">
                     <CardTitle className="text-lg">Portfolio Breakdown</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-3 pt-0">
+                  <CardContent className="p-1 pt-0">
                     <div className="h-[200px]">
                       {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                       ) : portfolioData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={portfolioData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {portfolioData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => [`${value} units`, 'Quantity']} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <div className="flex justify-end w-full h-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart margin={{ left: 10 }}>
+                              <Pie
+                                data={portfolioData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {portfolioData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => [`${value} units`, 'Quantity']} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">
                           No portfolio data available
@@ -814,22 +870,31 @@ const Dashboard = () => {
                           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                       ) : portfolioData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={portfolioData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [`${value}%`, '24h Change']} />
-                            <Bar dataKey="change24h" fill="#8884d8">
-                              {portfolioData.map((entry, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={(entry.change24h || 0) >= 0 ? '#22c55e' : '#ef4444'}
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
+                        <div className="flex justify-end w-full h-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={portfolioData} margin={{ top: 10, right: 0, left: 15, bottom: 15 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis 
+                                dataKey="name" 
+                                height={1}
+                                tick={{fontSize: 9}}
+                              />
+                              <YAxis 
+                                width={1}
+                                tick={{fontSize: 9}}
+                              />
+                              <Tooltip formatter={(value) => [`${value}%`, '24h Change']} />
+                              <Bar dataKey="change24h" fill="#8884d8">
+                                {portfolioData.map((entry, index) => (
+                                  <Cell
+                                    key={`cell-${index}`}
+                                    fill={(entry.change24h || 0) >= 0 ? '#22c55e' : '#ef4444'}
+                                  />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">
                           No performance data available
@@ -868,7 +933,7 @@ const Dashboard = () => {
 
                           const txAmount = tx.outputs && Array.isArray(tx.outputs) && tx.outputs.length > 0 ?
                             tx.outputs.reduce((sum, output) => sum + (output.address === walletInfo.address ? output.amount : 0), 0) / 100000000 :
-                            5.25; // Fixed amount for consistency
+                            5.25; 
 
                           return (
                             <div key={index} className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/20 transition-colors">
@@ -954,10 +1019,10 @@ const Dashboard = () => {
                               onClick={navigateToNFTExplorer}>
                               <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
                                 <img
-                                  src={collection?.thumbnail_url || `/logo.png`}
+                                  src={collection?.thumbnail_url || `/kas.png`}
                                   alt={tick}
                                   className="w-full h-full object-cover"
-                                  onError={(e) => { e.currentTarget.src = `/logo.png` }}
+                                  onError={(e) => { e.currentTarget.src = `/kas.png` }}
                                 />
                               </div>
                               <div className="flex-1">
@@ -998,10 +1063,10 @@ const Dashboard = () => {
                           <div key={index} className="relative cursor-pointer" onClick={navigateToNFTExplorer}>
                             <div className="aspect-square rounded-md overflow-hidden border border-border/40">
                               <img
-                                src={mint.thumbnail_url || `/logo.png`}
+                                src={mint.thumbnail_url || `/kas.png`}
                                 alt="NFT"
                                 className="w-full h-full object-cover"
-                                onError={(e) => { e.currentTarget.src = `/logo.png` }}
+                                onError={(e) => { e.currentTarget.src = `/kas.png` }}
                               />
                             </div>
                             <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white text-xs px-1.5 py-0.5 rounded">
@@ -1020,43 +1085,7 @@ const Dashboard = () => {
                     )}
                   </CardContent>
                 </Card>
-              </div>
-
-              <Card>
-                <CardHeader className="p-3">
-                  <CardTitle className="text-lg">NFT Marketplace Activity</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="h-[200px]">
-                    {isLoading ? (
-                      <div className="flex items-center justify-center h-full">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : recentMints.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={recentMints.map((mint, i) => ({
-                          time: i.toString(),
-                          activity: i + 1,
-                          collection: mint.tick
-                        }))}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="time" />
-                          <YAxis />
-                          <Tooltip
-                            formatter={(value, name, props) => [value, name === 'activity' ? 'Mint Count' : name]}
-                            labelFormatter={(label) => `Collection: ${recentMints[parseInt(label)]?.tick || 'Unknown'}`}
-                          />
-                          <Line type="monotone" dataKey="activity" stroke="#8884d8" activeDot={{ r: 8 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        No marketplace activity data available
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              </div>             
             </div>
           </TabsContent>
         </Tabs>
