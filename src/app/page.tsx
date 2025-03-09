@@ -932,28 +932,18 @@ const Dashboard = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Tokens</p>
-                          <h3 className="text-2xl font-bold">${portfolioStats.totalValue.toFixed(1)}</h3>
+                          <h3 className="text-2xl font-bold">{portfolioData.length}</h3>
                         </div>
                         <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                           <Wallet className="h-5 w-5 text-blue-500" />
                         </div>
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between text-sm">
+                      <div className="mt-1 flex items-center justify-between text-sm">
                         <div className="flex flex-col items-center">
                           <div className="flex items-center">
-                            <span className={portfolioStats.dailyChange >= 0 ? 'text-green-500' : 'text-red-500'}>
-                              {portfolioStats.dailyChange >= 0 ? '+' : ''}{portfolioStats.dailyChange.toFixed(1)}%
-                            </span>
+                            <span className="text-sm text-muted-foreground ">${portfolioStats.totalValue.toFixed(1)}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">24h</span>
-                        </div>
-
-                        <div className="flex flex-col items-center">
-                          <div className="flex items-center">
-                            <span className="text-blue-500">{portfolioData.length}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Tokens</span>
                         </div>
                       </div>
                     </CardContent>
@@ -981,20 +971,11 @@ const Dashboard = () => {
                           <p className="text-sm text-muted-foreground">NFTs</p>
                           <h3 className="text-2xl font-bold">{nftHoldings.length}</h3>
                           <p className="text-sm text-muted-foreground mt-1">
-                            ${(nftHoldings.reduce((total, nft) => total + nft.value, 0)).toFixed(1)} Value
+                            ${(nftHoldings.reduce((total, nft) => total + nft.value, 0)).toFixed(1)}
                           </p>
                         </div>
                         <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
                           <Palette className="h-5 w-5 text-purple-500" />
-                        </div>
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between text-sm">
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs text-muted-foreground">Collections:</span>
-                          <span className="text-xs font-medium">
-                            {new Set(nftHoldings.map(nft => nft.collection)).size}
-                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -1165,8 +1146,8 @@ const Dashboard = () => {
                           <h3 className="text-xs text-muted-foreground mb-1">24h Volume</h3>
                           <p className="text-xl font-bold flex items-center">
                             <DollarSign className="h-4 w-4 mr-1 text-purple-500" />
-                            {nftStats24h 
-                              ? (parseInt(nftStats24h.totalVolumeKasKaspiano) / 1000).toFixed(1) 
+                            {nftStats24h
+                              ? (parseInt(nftStats24h.totalVolumeKasKaspiano) / 1000).toFixed(1)
                               : "0"}K KAS
                           </p>
                           {nftStats24h && nftGlobalStats && (
@@ -1180,7 +1161,7 @@ const Dashboard = () => {
                           <h3 className="text-xs text-muted-foreground mb-1">24h Transactions</h3>
                           <p className="text-xl font-bold flex items-center">
                             <TrendingUp className="h-4 w-4 mr-1 text-blue-500" />
-                            {nftStats24h 
+                            {nftStats24h
                               ? nftStats24h.totalTradesKaspiano.toLocaleString()
                               : "0"}
                           </p>
@@ -1195,7 +1176,7 @@ const Dashboard = () => {
                           <h3 className="text-xs text-muted-foreground mb-1">All-time Volume</h3>
                           <p className="text-xl font-bold flex items-center">
                             <Coins className="h-4 w-4 mr-1 text-amber-500" />
-                            {nftGlobalStats 
+                            {nftGlobalStats
                               ? (parseInt(nftGlobalStats.totalVolumeKasKaspiano) / 1000).toFixed(1)
                               : "0"}K KAS
                           </p>
@@ -1220,19 +1201,19 @@ const Dashboard = () => {
                               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                             >
                               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis 
-                                dataKey="date" 
+                              <XAxis
+                                dataKey="date"
                                 tick={{ fontSize: 10 }}
                               />
-                              <YAxis 
-                                yAxisId="left" 
-                                orientation="left" 
+                              <YAxis
+                                yAxisId="left"
+                                orientation="left"
                                 stroke="#8884d8"
                                 tick={{ fontSize: 10 }}
                               />
-                              <YAxis 
-                                yAxisId="right" 
-                                orientation="right" 
+                              <YAxis
+                                yAxisId="right"
+                                orientation="right"
                                 stroke="#82ca9d"
                                 tick={{ fontSize: 10 }}
                               />
@@ -1241,20 +1222,20 @@ const Dashboard = () => {
                                 return [`${value}`, 'Transactions'];
                               }} />
                               <Legend />
-                              <Line 
-                                yAxisId="left" 
-                                type="monotone" 
-                                dataKey="volume" 
-                                name="Volume (KAS)" 
-                                stroke="#8884d8" 
-                                activeDot={{ r: 8 }} 
+                              <Line
+                                yAxisId="left"
+                                type="monotone"
+                                dataKey="volume"
+                                name="Volume (KAS)"
+                                stroke="#8884d8"
+                                activeDot={{ r: 8 }}
                               />
-                              <Line 
-                                yAxisId="right" 
-                                type="monotone" 
-                                dataKey="sales" 
-                                name="Transactions" 
-                                stroke="#82ca9d" 
+                              <Line
+                                yAxisId="right"
+                                type="monotone"
+                                dataKey="sales"
+                                name="Transactions"
+                                stroke="#82ca9d"
                               />
                             </LineChart>
                           </ResponsiveContainer>
@@ -1315,7 +1296,7 @@ const Dashboard = () => {
                             )}
                           </TableBody>
                         </Table>
-                        
+
                         <h3 className="text-sm font-semibold flex items-center pt-4">
                           <ChartIcon className="w-4 h-4 mr-1.5 text-green-500" />
                           Top Collections (24h)
