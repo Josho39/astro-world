@@ -29,7 +29,6 @@ const Dashboard = () => {
   const [trendingCollections, setTrendingCollections] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([]);
-  const [portfolioHistoryData, setPortfolioHistoryData] = useState<{ date: string; value: number }[]>([]);
   const [transactionData, setTransactionData] = useState<Transaction[]>([]);
   const [portfolioStats, setPortfolioStats] = useState<any>({
     totalValue: 0,
@@ -155,27 +154,6 @@ const Dashboard = () => {
               });
 
             setPortfolioData(availableTokens);
-
-  
-            if (availableTokens.length > 0) {
-              const today = new Date();
-              const portfolioHistory = [];
-              let baseValue = availableTokens.reduce((sum: number, token: { value: number; price: number; }) => sum + (token.value * token.price), 0);
-              
-              for (let i = 30; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(today.getDate() - i);
-                const randomVariation = 0.98 + (Math.random() * 0.09); 
-                baseValue = baseValue * randomVariation;
-                
-                portfolioHistory.push({
-                  date: date.toLocaleDateString(),
-                  value: baseValue
-                });
-              }
-              
-              setPortfolioHistoryData(portfolioHistory);
-            }
           }
         } catch (err) {
           console.error('Error fetching token balances:', err);
@@ -1090,7 +1068,7 @@ const Dashboard = () => {
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <Card>
                     <CardHeader className="p-4">
                       <CardTitle className="text-lg">Portfolio Allocation</CardTitle>
@@ -1143,79 +1121,6 @@ const Dashboard = () => {
                             </span>
                           </div>
                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="p-4">
-                      <CardTitle className="text-lg flex items-center">
-                        <ChartIcon className="h-5 w-5 mr-2 text-blue-500" />
-                        Portfolio Performance
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4 pt-0">
-                      <div className="h-[250px]">
-                        {isLoading ? (
-                          <div className="flex items-center justify-center h-full">
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                          </div>
-                        ) : portfolioHistoryData.length > 0 ? (
-                          <div className="flex justify-end w-full h-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart
-                                data={portfolioHistoryData}
-                                margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis 
-                                  dataKey="date" 
-                                  tick={{ fontSize: 10 }} 
-                                  tickFormatter={(value) => {
-                                    const date = new Date(value);
-                                    return `${date.getDate()}/${date.getMonth() + 1}`;
-                                  }}
-                                />
-                                <YAxis 
-                                  tick={{ fontSize: 10 }}
-                                  tickFormatter={(value) => `$${value.toFixed(0)}`}
-                                />
-                                <Tooltip formatter={(value) => [`$${(value as number).toFixed(2)}`, 'Portfolio Value']} />
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="value" 
-                                  stroke="#8884d8" 
-                                  strokeWidth={2}
-                                  dot={{ r: 0 }}
-                                  activeDot={{ r: 6 }}
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-muted-foreground">
-                            No portfolio history data available
-                          </div>
-                        )}
-                      </div>
-
-                                                <div className="flex justify-between items-center mt-4 bg-blue-500/10 rounded-md p-3 border border-blue-500/20">
-                        <div>
-                          <span className="text-xs text-muted-foreground">Current Value</span>
-                          <div className="text-lg font-bold text-blue-500">
-                            ${portfolioHistoryData.length > 0 ? portfolioHistoryData[0].value.toFixed(2) : "0.00"}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground">Token Count</span>
-                          <div className="text-sm font-bold">{portfolioData.length} tokens</div>
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground">24h Change</span>
-                          <div className={`text-sm font-bold ${portfolioStats.dailyChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {portfolioStats.dailyChange >= 0 ? '+' : ''}{portfolioStats.dailyChange.toFixed(2)}%
-                          </div>
-                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -1360,7 +1265,7 @@ const Dashboard = () => {
                         )}
                       </div>
 
-                                                <div className="space-y-4">
+                      <div className="space-y-4">
                         <h3 className="text-sm font-semibold flex items-center">
                           <Coins className="w-4 h-4 mr-1.5 text-blue-500" />
                           Recent Sales
@@ -1443,7 +1348,7 @@ const Dashboard = () => {
                                 </TableRow>
                               ))
                             ) : nftTop24hCollections.length > 0 ? (
-                              nftTop24hCollections.slice(0, 5).map((collection, index) => (
+                              nftTop24hCollections.slice(0, 10).map((collection, index) => (
                                 <TableRow key={index} className="cursor-pointer hover:bg-accent/5" onClick={navigateToNFTExplorer}>
                                   <TableCell className="font-medium">{collection.ticker}</TableCell>
                                   <TableCell>{collection.totalVolume.toLocaleString()}</TableCell>
@@ -1489,7 +1394,7 @@ const Dashboard = () => {
                         ) : trendingCollections.length > 0 ? (
                           trendingCollections
                             .sort((a, b) => parseFloat(b.floorPrice as string) - parseFloat(a.floorPrice as string))
-                            .slice(0, 5)
+                            .slice(0, 10)
                             .map((collection, index) => (
                               <div key={index} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5 transition-colors cursor-pointer" onClick={navigateToNFTExplorer}>
                                 <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
@@ -1528,7 +1433,7 @@ const Dashboard = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0">
-                                                      {walletConnected ? (
+                      {walletConnected ? (
                         nftHoldings.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {nftHoldings.slice(0, 6).map((nft, idx) => (

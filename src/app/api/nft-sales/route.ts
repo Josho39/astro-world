@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       }
     }
     
-    const processedSales = ordersData.orders.slice(0, 5).map((order: any) => {
+    const processedSales = ordersData.orders.slice(0, 10).map((order: any) => {
       const fulfillmentDate = new Date(order.fulfillmentTimestamp);
       const now = new Date();
       const diffSeconds = Math.floor((now.getTime() - fulfillmentDate.getTime()) / 1000);
