@@ -457,10 +457,10 @@ const NFTInsightsPage = () => {
                     </div>
                 </div>
 
-                <div className="px-4">
+                <div className="px-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                         <Card>
-                            <CardHeader className="pb-2">
+                            <CardHeader className="pb-1">
                                 <CardTitle className="flex items-center text-base font-medium">
                                     <Coins className="w-4 h-4 mr-2 text-primary" />
                                     Total Market Volume
@@ -468,12 +468,12 @@ const NFTInsightsPage = () => {
                                 <CardDescription>All-time volume across platforms</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{totalMarketVolume.toLocaleString()} KAS</div>
+                                <div className="text-xl font-bold">{totalMarketVolume.toLocaleString()} KAS</div>
                             </CardContent>
                         </Card>
 
                         <Card>
-                            <CardHeader className="pb-2">
+                            <CardHeader className="pb-">
                                 <CardTitle className="flex items-center text-base font-medium">
                                     <TrendingUp className="w-4 h-4 mr-2 text-green-500" />
                                     24h Trading Volume
@@ -481,7 +481,7 @@ const NFTInsightsPage = () => {
                                 <CardDescription>Volume in the last 24 hours</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{combinedVolume24h.toLocaleString()} KAS</div>
+                                <div className="text-xl font-bold">{combinedVolume24h.toLocaleString()} KAS</div>
                             </CardContent>
                         </Card>
                     </div>
@@ -536,14 +536,14 @@ const NFTInsightsPage = () => {
                                 </CardHeader>
                                 <CardContent>
                                     <Tabs defaultValue="price-history">
-                                        <TabsList className="mb-4">
+                                        <TabsList className="mb-2">
                                             <TabsTrigger value="price-history">Price History</TabsTrigger>
                                             <TabsTrigger value="traits">Traits</TabsTrigger>
                                             <TabsTrigger value="holders">Holders</TabsTrigger>
                                         </TabsList>
 
                                         <TabsContent value="price-history">
-                                            <div className="flex justify-end mb-4">
+                                            <div className="flex justify-end mb-2">
                                                 <div className="flex items-center space-x-2">
                                                     <Button
                                                         onClick={() => setTimeframe("1d")}
@@ -594,21 +594,21 @@ const NFTInsightsPage = () => {
                                                     </LineChart>
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="text-center py-12 text-gray-500">No price history available</div>
+                                                <div className="text-center py-2 text-gray-500">No price history available</div>
                                             )}
 
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-6">
-                                                <div className="bg-secondary rounded-lg p-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                                                <div className="bg-secondary rounded-lg p-2">
                                                     <div className="text-sm text-gray-500">Floor Price</div>
                                                     <div className="text-2xl font-bold">{collections.find(c => c.ticker === selectedCollection)?.price.toLocaleString()} KAS</div>
                                                 </div>
 
-                                                <div className="bg-secondary rounded-lg p-4">
+                                                <div className="bg-secondary rounded-lg p-2">
                                                     <div className="text-sm text-gray-500">Total Supply</div>
                                                     <div className="text-2xl font-bold">{collectionDetail.totalSupply.toLocaleString()}</div>
                                                 </div>
 
-                                                <div className="bg-secondary rounded-lg p-4">
+                                                <div className="bg-secondary rounded-lg p-2">
                                                     <div className="text-sm text-gray-500">Total Holders</div>
                                                     <div className="text-2xl font-bold">{collectionDetail.totalHolders.toLocaleString()}</div>
                                                 </div>
@@ -616,9 +616,9 @@ const NFTInsightsPage = () => {
                                         </TabsContent>
 
                                         <TabsContent value="traits">
-                                            <div className="space-y-6">
+                                            <div className="space-y-1">
                                                 {collectionDetail.metadata.traits && Object.entries(collectionDetail.metadata.traits).map(([category, traits]) => (
-                                                    <div key={category} className="space-y-2">
+                                                    <div key={category} className="space-y-1">
                                                         <h3 className="text-lg font-semibold">{category}</h3>
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                                             {Object.entries(traits)
@@ -640,20 +640,20 @@ const NFTInsightsPage = () => {
                                                 ))}
 
                                                 {!collectionDetail.metadata.traits && (
-                                                    <div className="text-center py-12 text-gray-500">No trait data available</div>
+                                                    <div className="text-center py-2 text-gray-500">No trait data available</div>
                                                 )}
                                             </div>
                                         </TabsContent>
 
                                         <TabsContent value="holders">
-                                            <div className="space-y-2">
+                                            <div className="space-y-1">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                    <div className="bg-secondary rounded-lg p-4">
+                                                    <div className="bg-secondary rounded-lg p-2">
                                                         <div className="text-sm text-gray-500">Total Holders</div>
                                                         <div className="text-2xl font-bold">{collectionDetail.totalHolders.toLocaleString()}</div>
                                                     </div>
 
-                                                    <div className="bg-secondary rounded-lg p-4">
+                                                    <div className="bg-secondary rounded-lg p-2">
                                                         <div className="text-sm text-gray-500">Unique Ownership Percentage</div>
                                                         <div className="text-2xl font-bold">
                                                             {((collectionDetail.totalHolders / collectionDetail.totalSupply) * 100).toFixed(2)}%
@@ -662,7 +662,7 @@ const NFTInsightsPage = () => {
                                                 </div>
 
                                                 <h3 className="text-lg font-semibold">Top Holders</h3>
-                                                <div className="space-y-2">
+                                                <div className="space-y-1">
                                                     {(collectionDetail.holders || [])
                                                         .sort((a, b) => b.count - a.count)
                                                         .slice(0, 10)
@@ -709,13 +709,13 @@ const NFTInsightsPage = () => {
                                                 ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-2 text-gray-500">No recent sales</div>
+                                        <div className="text-center py-1 text-gray-500">No recent sales</div>
                                     )}
 
-                                    <div className="mt-4 pt-2 border-t">
+                                    <div className="mt-2 pt-2 border-t">
                                         <div className="text-center">
                                             <Card className="bg-muted/20 border border-dashed">
-                                                <CardContent className="p-4 flex items-center justify-center">
+                                                <CardContent className="p-2 flex items-center justify-center">
                                                     <img
                                                         src={getNFTImageUrl(selectedCollection, "1")}
                                                         alt={`${selectedCollection} #1`}
@@ -747,7 +747,7 @@ const NFTInsightsPage = () => {
                             </CardHeader>
                             <CardContent>
                                 {loading ? (
-                                    <div className="space-y-2">
+                                    <div className="space-y-1">
                                         {Array(5).fill(0).map((_, index) => (
                                             <div key={index} className="flex items-center justify-between p-2 border rounded-md animate-pulse">
                                                 <div className="flex items-center gap-2">
@@ -759,7 +759,7 @@ const NFTInsightsPage = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
+                                    <div className="space-y-1">
                                         {collections
                                             .sort((a, b) => b.totalVolume - a.totalVolume)
                                             .slice(0, 7)
@@ -801,7 +801,7 @@ const NFTInsightsPage = () => {
                             </CardHeader>
                             <CardContent>
                                 {loading ? (
-                                    <div className="space-y-2">
+                                    <div className="space-y-1">
                                         {Array(5).fill(0).map((_, index) => (
                                             <div key={index} className="flex items-center justify-between p-2 border rounded-md animate-pulse">
                                                 <div className="flex items-center gap-2">
@@ -813,7 +813,7 @@ const NFTInsightsPage = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
+                                    <div className="space-y-1">
                                         {collections
                                             .filter(c => c.changePrice > 0)
                                             .sort((a, b) => b.changePrice - a.changePrice)
@@ -844,7 +844,7 @@ const NFTInsightsPage = () => {
                                         }
 
                                         {collections.filter(c => c.changePrice > 0).length === 0 && (
-                                            <div className="text-center py-2 text-gray-500">No collections with positive gains</div>
+                                            <div className="text-center py-1 text-gray-500">No collections with positive gains</div>
                                         )}
                                     </div>
                                 )}
@@ -861,7 +861,7 @@ const NFTInsightsPage = () => {
                         </CardHeader>
                         <CardContent>
                             {loading ? (
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                     {Array(8).fill(0).map((_, index) => (
                                         <div key={index} className="flex items-center justify-between p-2 border rounded-md animate-pulse">
                                             <div className="flex items-center gap-2">
@@ -927,17 +927,14 @@ const NFTInsightsPage = () => {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base font-medium">All NFT Collections</CardTitle>
-                            <CardDescription>
-                                Browse all collections on the Kaspa network
-                            </CardDescription>
+                            <CardTitle className="text-base font-medium">NFT Collections</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {loading ? (
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                     {Array(8).fill(0).map((_, index) => (
-                                        <div key={index} className="flex items-center justify-between p-2 border rounded-md animate-pulse">
-                                            <div className="flex items-center gap-2">
+                                        <div key={index} className="flex items-center justify-between p-1 border rounded-md animate-pulse">
+                                            <div className="flex items-center gap-1">
                                                 <Skeleton className="h-10 w-10 rounded-md" />
                                                 <Skeleton className="h-4 w-32" />
                                             </div>
