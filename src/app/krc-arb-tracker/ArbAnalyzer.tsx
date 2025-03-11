@@ -237,6 +237,7 @@ const ArbAnalyzer = () => {
                             className="pl-9 h-9 bg-background/80 border-primary/20 w-full"
                         />
                     </div>
+
                 </div>
             </div>
 
