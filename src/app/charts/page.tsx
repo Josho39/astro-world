@@ -13,7 +13,7 @@ function ChartPageLoading() {
 
 export default function TVchartsPage() {
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <Suspense fallback={<ChartPageLoading />}>
         <ChartPage />
       </Suspense>

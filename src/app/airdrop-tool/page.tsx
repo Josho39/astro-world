@@ -5,7 +5,7 @@ import AirdropTool from './AirdropTool';
 
 export default function AirdropToolPage() {
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <AirdropTool />
     </div>
   );

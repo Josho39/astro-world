@@ -218,10 +218,17 @@ export default function WalletProfiler() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-3">
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-0 p-2">
+        <div>
+          <div>
+            <CardTitle className="text-xl">Wallet Profiler</CardTitle>
+            <p className="text-sm text-muted-foreground">View wallet contents and analyze token distribution</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 w-full md:w-auto mt-3 md:mt-0">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Enter Kaspa Address"
               value={searchAddress}
@@ -231,36 +238,36 @@ export default function WalletProfiler() {
                   handleSearchClick();
                 }
               }}
-              className="flex-1"
+              className="pl-9 h-9 bg-background/80 border-primary/20 w-full"
             />
-            <div className="flex gap-2">
-              {walletConnected && walletInfo && (
-                <Button
-                  variant="outline"
-                  onClick={handleMyWalletClick}
-                  className="whitespace-nowrap"
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  My Wallet
-                </Button>
-              )}
-              <Button
-                onClick={handleSearchClick}
-                disabled={!searchAddress || loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex gap-2">
+            {walletConnected && walletInfo && (
+              <Button
+                variant="outline"
+                onClick={handleMyWalletClick}
+                className="whitespace-nowrap"
+              >
+                <Wallet className="h-4 w-4 mr-2" />
+                My Wallet
+              </Button>
+            )}
+            <Button
+              onClick={handleSearchClick}
+              disabled={!searchAddress || loading}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {loading && !tokenBalances.length ? (
         <Card>
@@ -503,8 +510,6 @@ export default function WalletProfiler() {
               </div>
             </CardContent>
           </Card>
-
-
         </>
       ) : null}
     </div>

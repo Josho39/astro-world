@@ -5,7 +5,7 @@ import TransactionTimeline from './TransactionTimeline';
 
 export default function WalletExplorerPage() {
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <TransactionTimeline />
     </div>
 

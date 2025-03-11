@@ -5,11 +5,11 @@ import TradingViewChart from './TradingViewChart';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DollarSign, Coins, Search, BarChart4, LineChart, CandlestickChart, History, Clock, ArrowRight, Sparkles, TrendingUp, TrendingDown, RefreshCw, Loader2, AlertCircle, Users, Link2, Activity, Globe } from 'lucide-react';
+import { DollarSign, Coins, Search, CandlestickChart, Clock, ArrowRight, TrendingUp, TrendingDown, RefreshCw, Loader2, AlertCircle, Users, Link2, Activity, Globe } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faDiscord, faTelegram } from '@fortawesome/free-brands-svg-icons';
 import { useSearchParams } from 'next/navigation';
@@ -284,15 +284,14 @@ const ChartPage = () => {
   };
 
   return (
-    <div className="w-full h-full min-h-screen p-2 sm:p-4 bg-background overflow-y-auto">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+    <div className="w-full h-full min-h-screen p-2 sm:p-2 bg-background overflow-y-auto">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-0">
           <div>
-            <h1 className="text-2xl font-bold flex items-center">
-              <CandlestickChart className="mr-2 h-6 w-6 text-primary" />
-              Charts
-            </h1>
-            <p className="text-muted-foreground">Analyze token price movements and trends</p>
+            <div>
+              <CardTitle className="text-xl">Charts</CardTitle>
+              <p className="text-sm text-muted-foreground">Analyze token price movements and trends</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -729,7 +728,7 @@ const ChartPage = () => {
               </CardHeader>
               <CardContent className="p-2 pt-0">
                 {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
                     {Array(10).fill(0).map((_, i) => (
                       <div key={i} className="space-y-2">
                         <Skeleton className="h-4 w-24" />
@@ -738,7 +737,7 @@ const ChartPage = () => {
                     ))}
                   </div>
                 ) : tokenData ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-9 gap-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-1">
                     <div className="space-y-1">
                       <span className="text-sm text-muted-foreground">Total Supply</span>
                       <span className="font-medium block text-base">

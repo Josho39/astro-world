@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Search, BarChart3, ArrowUpRight, ArrowDownRi
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, useRef, useMemo } from 'react';
@@ -44,13 +44,6 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
-const formatPrice = (price: number | undefined): string => {
-  if (price === undefined) return '-';
-  if (price === 0) return '0';
-  if (price < 0.01) return '<0.01';
-  return price.toFixed(2);
-};
-
 const formatChange = (change: number | undefined): string => {
   if (change === undefined) return '0%';
   return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
@@ -70,6 +63,8 @@ const getProgressColorClass = (percentage: number): string => {
   return 'bg-green-500';
 };
 
+const MotionDiv = motion.div;
+
 const CollectionItem = ({
   collection,
   isSelected,
@@ -87,7 +82,7 @@ const CollectionItem = ({
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   return (
-    <motion.div
+    <MotionDiv
       whileHover={{ y: -5, boxShadow: "0 8px 30px -15px rgba(0, 0, 0, 0.2)" }}
       className={`border rounded-xl overflow-hidden transition-colors duration-300 cursor-pointer
       ${isSelected ? 'border-primary shadow-md bg-primary/5' : 'hover:border-primary/50'}`}
@@ -101,7 +96,8 @@ const CollectionItem = ({
             className="w-full h-full object-cover"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+              target.src =
+                'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
             }}
           />
         ) : (
@@ -114,7 +110,6 @@ const CollectionItem = ({
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-bold text-lg truncate">{collection.tick}</h3>
         </div>
-
         {collection.total_supply && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs">
@@ -130,7 +125,7 @@ const CollectionItem = ({
           </div>
         )}
       </div>
-    </motion.div>
+    </MotionDiv>
   );
 };
 
@@ -783,374 +778,389 @@ const KRC721Explorer = () => {
   };
 
   return (
-    <motion.div
+    <MotionDiv
       className="min-h-screen"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex flex-col space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              type="text"
-              placeholder={showTokens ? "Search by token ID..." : "Search collections..."}
-              className="w-full pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      <div className="flex flex-col space-y-4">
+        {/* Header with search box */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-0 p-2">
+          <div>
+            <div>
+              <CardTitle className="text-xl">KRC721 Explorer</CardTitle>
+              <p className="text-sm text-muted-foreground">Browse NFT collections on the Kaspa network</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full md:w-auto mt-3 md:mt-0">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={showTokens ? "Search by token ID..." : "Search collections..."}
+                className="pl-9 h-9 bg-background/80 border-primary/20 w-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {!showTokens ? (
-            <motion.div
-              key="collections"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="mb-1">
-                <div className="overflow-hidden relative">
-                  <div className="flex items-center justify-between mb-2 relative">
-                    <div className="hidden md:block">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => slideCards('left')}
-                        disabled={cardsStartIndex === 0}
-                        className="h-10 w-10 absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border flex items-center justify-center hover:bg-accent transition-colors"
-                      >
-                        <ChevronLeft className="h-5 w-5 text-foreground" />
-                        <span className="sr-only">Previous</span>
-                      </Button>
-                    </div>
-
-                    <motion.div
-                      className="w-full touch-pan-y"
-                      drag="x"
-                      dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.2}
-                      onDragEnd={handleSwipe}
+        <Card className="w-full border">
+          <CardContent className="p-4">
+            <AnimatePresence mode="wait">
+              {!showTokens ? (
+                <MotionDiv
+                  key="collections"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="mb-1 flex overflow-x-auto border-b">
+                    <button
+                      className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'top' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setActiveTab('top')}
                     >
-                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full px-2 md:px-20">
-                        {loading && collections.length === 0 ? (
-                          Array(6).fill(0).map((_, i) => (
-                            <Card key={`skeleton-${i}`}>
-                              <CardContent className="p-0">
-                                <Skeleton className="h-48 w-full rounded-t-lg" />
-                                <div className="p-4 space-y-2">
-                                  <Skeleton className="h-6 w-24" />
-                                  <Skeleton className="h-4 w-full" />
-                                  <Skeleton className="h-4 w-3/4" />
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))
-                        ) : (
-                          visibleCards.length === 0 ? (
-                            <div className="col-span-full text-center py-4 text-muted-foreground">
-                              No collections found matching your search
-                            </div>
-                          ) : (
-                            visibleCards.map((collection) => (
-                              <motion.div
-                                key={collection.tick}
-                                variants={item}
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <CollectionItem
-                                  collection={collection}
-                                  isSelected={selectedCollection?.tick === collection.tick}
-                                  onClick={() => handleCollectionClick(collection.tick)}
-                                />
-                              </motion.div>
-                            ))
-                          )
-                        )}
-                      </div>
-                    </motion.div>
+                      <BarChart3 className="w-4 h-4 inline-block mr-2" />
+                      <span>Top Volume</span>
+                    </button>
+                    <button
+                      className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'recent' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setActiveTab('recent')}
+                    >
+                      <Clock className="w-4 h-4 inline-block mr-2" />
+                      <span>Recent</span>
+                    </button>
+                  </div>
 
-                    <div className="hidden md:block">
+                  <div className="mt-4">
+                    <div className="overflow-hidden relative">
+                      <div className="flex items-center justify-between mb-2 relative">
+                        <div className="hidden md:block">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => slideCards('left')}
+                            disabled={cardsStartIndex === 0}
+                            className="h-10 w-10 absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border flex items-center justify-center hover:bg-accent transition-colors"
+                          >
+                            <ChevronLeft className="h-5 w-5 text-foreground" />
+                            <span className="sr-only">Previous</span>
+                          </Button>
+                        </div>
+
+                        <MotionDiv
+                          className="w-full touch-pan-y"
+                          drag="x"
+                          dragConstraints={{ left: 0, right: 0 }}
+                          dragElastic={0.2}
+                          onDragEnd={handleSwipe}
+                        >
+                          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full px-2 md:px-20">
+                            {loading && collections.length === 0 ? (
+                              Array(6).fill(0).map((_, i) => (
+                                <Card key={`skeleton-${i}`}>
+                                  <CardContent className="p-0">
+                                    <Skeleton className="h-48 w-full rounded-t-lg" />
+                                    <div className="p-4 space-y-2">
+                                      <Skeleton className="h-6 w-24" />
+                                      <Skeleton className="h-4 w-full" />
+                                      <Skeleton className="h-4 w-3/4" />
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))
+                            ) : (
+                              visibleCards.length === 0 ? (
+                                <div className="col-span-full text-center py-4 text-muted-foreground">
+                                  No collections found matching your search
+                                </div>
+                              ) : (
+                                visibleCards.map((collection) => (
+                                  <MotionDiv
+                                    key={collection.tick}
+                                    variants={item}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <CollectionItem
+                                      collection={collection}
+                                      isSelected={selectedCollection?.tick === collection.tick}
+                                      onClick={() => handleCollectionClick(collection.tick)}
+                                    />
+                                  </MotionDiv>
+                                ))
+                              )
+                            )}
+                          </div>
+                        </MotionDiv>
+
+                        <div className="hidden md:block">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => slideCards('right')}
+                            disabled={cardsStartIndex + cardsPerPage >= filteredCards.length}
+                            className="h-10 w-10 absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border flex items-center justify-center hover:bg-accent transition-colors"
+                          >
+                            <ChevronRight className="h-5 w-5 text-foreground" />
+                            <span className="sr-only">Next</span>
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-center pb-2 text-muted-foreground md:hidden text-xs">
+                        <div className="flex items-center justify-center gap-2">
+                          <ChevronLeft className="w-3 h-3" /> Swipe to navigate <ChevronRight className="w-3 h-3" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <CollectionTable
+                      collections={paginatedTableData}
+                      isLoading={loading && collections.length === 0}
+                      selectedCollection={selectedCollection?.tick || null}
+                      onSelectCollection={handleCollectionClick}
+                      currentPage={tableCurrentPage}
+                      pageSize={tablePageSize}
+                      onPageChange={setTableCurrentPage}
+                      totalPages={totalTablePages}
+                    />
+                  </div>
+                </MotionDiv>
+              ) : (
+                <MotionDiv
+                  key="tokens"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBackClick}
+                      className="flex items-center"
+                    >
+                      <ChevronLeft className="mr-1 w-4 h-4" />
+                      Back to Collections
+                    </Button>
+                  </div>
+
+                  {selectedCollection && (
+                    <Card className="mb-4">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col md:flex-row gap-3">
+                          <div className="w-full md:w-40 h-40 rounded-md overflow-hidden flex-shrink-0">
+                            {selectedCollection.thumbnail_url ? (
+                              <img
+                                src={selectedCollection.thumbnail_url}
+                                alt={selectedCollection.tick}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                                <span className="text-3xl font-bold text-primary/40">{selectedCollection.tick}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1">
+                            <h2 className="text-2xl font-bold mb-2">{selectedCollection.tick}</h2>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-2">
+                              <div>
+                                <p className="text-sm text-muted-foreground">Floor Price</p>
+                                <p className="text-lg font-bold">{selectedCollection.floor_price ? `${selectedCollection.floor_price} KAS` : 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Total Volume</p>
+                                <p className="text-lg font-bold">{selectedCollection.total_volume ? `${formatNumber(selectedCollection.total_volume)} KAS` : 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">24h Change</p>
+                                <p className={`text-lg font-bold ${getColorClass(selectedCollection.change_24h)}`}>
+                                  {selectedCollection.change_24h !== undefined ? (
+                                    <>
+                                      {selectedCollection.change_24h > 0 && <ArrowUpRight className="inline w-4 h-4 mr-1" />}
+                                      {selectedCollection.change_24h < 0 && <ArrowDownRight className="inline w-4 h-4 mr-1" />}
+                                      {formatChange(selectedCollection.change_24h)}
+                                    </>
+                                  ) : 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Mint Progress</p>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${getProgressColorClass(selectedCollection.minted_percentage || 0)} rounded-full`}
+                                      style={{ width: `${selectedCollection.minted_percentage || 0}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium">
+                                    {Math.round(selectedCollection.minted_percentage || 0)}%
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Supply</p>
+                                <p className="text-lg font-bold">
+                                  {selectedCollection.minted_count || 0}/{selectedCollection.total_supply || '?'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <NFTTokenGrid
+                    tokens={paginatedTokens}
+                    isLoading={tokensLoading}
+                    onTokenClick={handleTokenClick}
+                  />
+
+                  {tokens.length > tokensPerPage && (
+                    <div className="flex justify-center items-center mt-4 gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => slideCards('right')}
-                        disabled={cardsStartIndex + cardsPerPage >= filteredCards.length}
-                        className="h-10 w-10 absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border flex items-center justify-center hover:bg-accent transition-colors"
+                        onClick={() => setTokenPage(1)}
+                        disabled={tokenPage === 1}
                       >
-                        <ChevronRight className="h-5 w-5 text-foreground" />
-                        <span className="sr-only">Next</span>
+                        First
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTokenPage(p => Math.max(1, p - 1))}
+                        disabled={tokenPage === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Previous
+                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, maxTokenPage) }, (_, i) => {
+                          let pageNum;
+                          if (maxTokenPage <= 5) {
+                            pageNum = i + 1;
+                          } else if (tokenPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (tokenPage >= maxTokenPage - 2) {
+                            pageNum = maxTokenPage - 4 + i;
+                          } else {
+                            pageNum = tokenPage - 2 + i;
+                          }
+
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={tokenPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                              onClick={() => setTokenPage(pageNum)}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTokenPage(p => Math.min(maxTokenPage, p + 1))}
+                        disabled={tokenPage === maxTokenPage}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTokenPage(maxTokenPage)}
+                        disabled={tokenPage === maxTokenPage}
+                      >
+                        Last
                       </Button>
                     </div>
-                  </div>
+                  )}
+                </MotionDiv>
+              )}
+            </AnimatePresence>
 
-                  <div className="text-center pb-2 text-muted-foreground md:hidden text-xs">
-                    <div className="flex items-center justify-center gap-2">
-                      <ChevronLeft className="w-3 h-3" /> Swipe to navigate <ChevronRight className="w-3 h-3" />
+            {selectedToken && (
+              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <Card className="w-full max-w-4xl">
+                  <CardContent className="p-3">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <h3 className="text-xl font-bold">
+                          {selectedCollection?.tick} #{selectedToken.id}
+                        </h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedToken(null)}
+                      >
+                        <ChevronLeft className="w-8 h-8" />
+                      </Button>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              <div className="mb-1 flex overflow-x-auto border-b">
-                <button
-                  className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'top' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-                  onClick={() => setActiveTab('top')}
-                >
-                  <BarChart3 className="w-4 h-4 inline-block mr-2" />
-                  <span>Top Volume</span>
-                </button>
-                <button
-                  className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === 'recent' ? 'border-emerald-500 text-emerald-500 shadow-[0_4px_8px_rgba(16,185,129,0.25)]' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-                  onClick={() => setActiveTab('recent')}
-                >
-                  <Clock className="w-4 h-4 inline-block mr-2" />
-                  <span>Recent</span>
-                </button>
-              </div>
-
-              <CollectionTable
-                collections={paginatedTableData}
-                isLoading={loading && collections.length === 0}
-                selectedCollection={selectedCollection?.tick || null}
-                onSelectCollection={handleCollectionClick}
-                currentPage={tableCurrentPage}
-                pageSize={tablePageSize}
-                onPageChange={setTableCurrentPage}
-                totalPages={totalTablePages}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="tokens"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="mb-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBackClick}
-                  className="flex items-center"
-                >
-                  <ChevronLeft className="mr-1 w-4 h-4" />
-                  Back to Collections
-                </Button>
-              </div>
-
-              {selectedCollection && (
-                <Card className="mb-1">
-                  <CardContent className="p-1">
-                    <div className="flex flex-col md:flex-row gap-3">
-                      <div className="w-full md:w-40 h-40 rounded-md overflow-hidden flex-shrink-0">
-                        {selectedCollection.thumbnail_url ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div>
+                        <div className="aspect-square rounded-md overflow-hidden bg-muted">
                           <img
-                            src={selectedCollection.thumbnail_url}
-                            alt={selectedCollection.tick}
-                            className="w-full h-full object-cover"
+                            src={selectedToken.image_url}
+                            alt={`Token #${selectedToken.id}`}
+                            className="w-full h-full object-contain"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
                             }}
                           />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                            <span className="text-3xl font-bold text-primary/40">{selectedCollection.tick}</span>
-                          </div>
-                        )}
+                        </div>
                       </div>
 
-                      <div className="flex-1">
-                        <h2 className="text-2xl font-bold mb-2">{selectedCollection.tick}</h2>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-2">
+                      <div>
+                        {selectedToken.metadata?.attributes && selectedToken.metadata.attributes.length > 0 && (
                           <div>
-                            <p className="text-sm text-muted-foreground">Floor Price</p>
-                            <p className="text-lg font-bold">{selectedCollection.floor_price ? `${selectedCollection.floor_price} KAS` : 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Total Volume</p>
-                            <p className="text-lg font-bold">{selectedCollection.total_volume ? `${formatNumber(selectedCollection.total_volume)} KAS` : 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">24h Change</p>
-                            <p className={`text-lg font-bold ${getColorClass(selectedCollection.change_24h)}`}>
-                              {selectedCollection.change_24h !== undefined ? (
-                                <>
-                                  {selectedCollection.change_24h > 0 && <ArrowUpRight className="inline w-4 h-4 mr-1" />}
-                                  {selectedCollection.change_24h < 0 && <ArrowDownRight className="inline w-4 h-4 mr-1" />}
-                                  {formatChange(selectedCollection.change_24h)}
-                                </>
-                              ) : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Mint Progress</p>
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full ${getProgressColorClass(selectedCollection.minted_percentage || 0)} rounded-full`}
-                                  style={{ width: `${selectedCollection.minted_percentage || 0}%` }}
-                                />
-                              </div>
-                              <span className="text-sm font-medium">
-                                {Math.round(selectedCollection.minted_percentage || 0)}%
-                              </span>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Attributes</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              {selectedToken.metadata.attributes.map((attr, i) => (
+                                <div key={i} className="border rounded-md p-2 bg-muted/10">
+                                  <div className="text-xs text-muted-foreground">{attr.trait_type}</div>
+                                  <div className="font-medium text-sm truncate">{attr.value}</div>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Supply</p>
-                            <p className="text-lg font-bold">
-                              {selectedCollection.minted_count || 0}/{selectedCollection.total_supply || '?'}
-                            </p>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )}
-
-              <NFTTokenGrid
-                tokens={paginatedTokens}
-                isLoading={tokensLoading}
-                onTokenClick={handleTokenClick}
-              />
-
-              {tokens.length > tokensPerPage && (
-                <div className="flex justify-center items-center mt-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(1)}
-                    disabled={tokenPage === 1}
-                  >
-                    First
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(p => Math.max(1, p - 1))}
-                    disabled={tokenPage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
-                  </Button>
-
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, maxTokenPage) }, (_, i) => {
-                      let pageNum;
-                      if (maxTokenPage <= 5) {
-                        pageNum = i + 1;
-                      } else if (tokenPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (tokenPage >= maxTokenPage - 2) {
-                        pageNum = maxTokenPage - 4 + i;
-                      } else {
-                        pageNum = tokenPage - 2 + i;
-                      }
-
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={tokenPage === pageNum ? "default" : "outline"}
-                          size="sm"
-                          className="w-8 h-8 p-0"
-                          onClick={() => setTokenPage(pageNum)}
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(p => Math.min(maxTokenPage, p + 1))}
-                    disabled={tokenPage === maxTokenPage}
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTokenPage(maxTokenPage)}
-                    disabled={tokenPage === maxTokenPage}
-                  >
-                    Last
-                  </Button>
-                </div>
-              )}
-
-              {selectedToken && (
-                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <Card className="w-full max-w-4xl">
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start mb-1">
-                        <div>
-                          <h3 className="text-xl font-bold">
-                            {selectedCollection?.tick} #{selectedToken.id}
-                          </h3>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedToken(null)}
-                        >
-                          <ChevronLeft className="w-8 h-8" />
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <div className="aspect-square rounded-md overflow-hidden bg-muted">
-                            <img
-                              src={selectedToken.image_url}
-                              alt={`Token #${selectedToken.id}`}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhMDU1ZjciIHN0b3Atb3BhY2l0eT0iLjIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzYjgyZjYiIHN0b3Atb3BhY2l0eT0iLjIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCNhKSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9IjUwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZmlsbD0icmdiYSgxMDAsMTAwLDEwMCwwLjgpIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          {selectedToken.metadata?.attributes && selectedToken.metadata.attributes.length > 0 && (
-                            <div>
-                              <h4 className="text-sm font-medium text-muted-foreground mb-2">Attributes</h4>
-                              <div className="grid grid-cols-2 gap-2">
-                                {selectedToken.metadata.attributes.map((attr, i) => (
-                                  <div key={i} className="border rounded-md p-2 bg-muted/10">
-                                    <div className="text-xs text-muted-foreground">{attr.trait_type}</div>
-                                    <div className="font-medium text-sm truncate">{attr.value}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </motion.div>
+    </MotionDiv>
   );
 };
 

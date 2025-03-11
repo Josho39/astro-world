@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function ProfitLossPage() {
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-lg">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-6xl font-bold text-white">

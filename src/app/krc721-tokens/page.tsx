@@ -5,7 +5,7 @@ import KRC721Explorer from './krc721';
 
 export default function KRC721Page() {
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <KRC721Explorer />
     </div>
   );

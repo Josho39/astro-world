@@ -598,13 +598,13 @@ const Dashboard = () => {
                               onError={(e) => { e.currentTarget.src = `/kas.png` }}
                             />
                           </div>
-                          <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md font-medium">
+                          <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 rounded-md font-medium">
                             #{mint.id}
                           </div>
-                          <div className="absolute bottom-2 left-2 bg-primary/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md font-medium">
+                          <div className="absolute bottom-2 left-2 bg-primary/80 backdrop-blur-sm text-white text-xs px-2 rounded-md font-medium">
                             {mint.tick}
                           </div>
-                          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center font-medium">
+                          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 rounded-md flex items-center font-medium">
                             <Clock className="w-3 h-3 mr-1" />
                             New
                           </div>

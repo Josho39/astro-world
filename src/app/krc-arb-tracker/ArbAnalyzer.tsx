@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Eye, EyeOff, Loader2, Search } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import _ from 'lodash';
 import { MARKETS } from './market-config';
@@ -219,195 +219,204 @@ const ArbAnalyzer = () => {
     }, [filteredTokens, ignoreZeroVolume, minVolume]);
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <Button onClick={fetchAndUpdateTickers} disabled={isLoading} className="flex items-center gap-2" variant="outline">
-                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                            <span className="hidden sm:inline">Refresh Market Data</span>
-                            <span className="sm:hidden">Refresh</span>
-                        </Button>
-                        {isLoading && progress.total > 0 && (
-                            <div className="text-sm text-muted-foreground">
-                                Loading: {Math.min(progress.current, progress.total)}/{progress.total}
-                            </div>
-                        )}
+        <div className="flex flex-col space-y-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-0 p-2">
+                <div>
+                    <div>
+                        <CardTitle className="text-xl">Arbitrage Analyzer</CardTitle>
+                        <p className="text-sm text-muted-foreground">Analyze arbitrage opportunities between different markets for tokens</p>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2 w-full md:w-auto mt-3 md:mt-0">
+                    <div className="relative flex-1 md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            type="text"
                             placeholder="Filter by ticker..."
                             value={filterTicker}
                             onChange={(e) => setFilterTicker(e.target.value)}
-                            className="w-full sm:max-w-sm"
+                            className="pl-9 h-9 bg-background/80 border-primary/20 w-full"
                         />
-                        <div className="flex items-center space-x-2">
-                            <Label htmlFor="min-volume">Min Volume ($):</Label>
-                            <Input
-                                id="min-volume"
-                                type="number"
-                                placeholder="Min volume"
-                                value={minVolume}
-                                onChange={(e) => setMinVolume(Number(e.target.value))}
-                                className="max-w-24"
-                            />
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Switch id="ignore-zero-volume" checked={ignoreZeroVolume} onCheckedChange={setIgnoreZeroVolume} />
-                            <Label htmlFor="ignore-zero-volume">Ignore Zero Volume</Label>
-                        </div>
-                        <div className="text-sm text-muted-foreground w-full sm:w-auto">
-                            Total Tokens: {tokens.length}
-                        </div>
                     </div>
-
-                    <div className="flex gap-2 flex-wrap items-start">
-                        {Object.keys(MARKETS).sort((a, b) => a.localeCompare(b)).map(market => {
-                            const marketConfig = MARKETS[market];
-                            const isAvailable = allMarkets.includes(market);
-                            
-                            return (
-                                <Button
-                                    key={market}
-                                    variant={hiddenMarkets.has(market) ? "default" : "outline"}
-                                    onClick={() => isAvailable && toggleMarket(market)}
-                                    className={cn(
-                                        "flex flex-col items-center gap-1 p-2 h-auto w-16",
-                                        !isAvailable && "opacity-50 cursor-not-allowed"
-                                    )}
-                                    title={`${marketConfig.displayName}${marketConfig.isKrc20Market ? ' (KRC20)' : ''}`}
-                                >
-                                    <div className="relative">
-                                        <Avatar className="h-8 w-8 rounded-full">
-                                            <AvatarImage src={marketConfig.iconUrl} alt={marketConfig.displayName} className="object-cover" />
-                                            <AvatarFallback className="text-xs">{marketConfig.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="absolute -top-1 -right-1">
-                                            {hiddenMarkets.has(market) ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                                        </div>
-                                    </div>
-                                    <span className="text-[10px] text-center leading-tight max-w-full truncate">
-                                        {marketConfig.displayName}
-                                    </span>
-                                </Button>
-                            );
-                        })}
-                        <Button variant="outline" onClick={showAllMarkets} className="flex flex-col items-center justify-center h-[68px] w-16 p-2">
-                            <Eye className="h-8 w-8" />
-                            <span className="text-[10px] mt-1">Show All</span>
-                        </Button>
-                    </div>
-
-                    <div className="relative overflow-x-auto border rounded-lg">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Ticker</TableHead>
-                                    <TableHead>Market</TableHead>
-                                    <TableHead>Price</TableHead>
-                                    <TableHead>Volume</TableHead>
-                                    <TableHead>Action</TableHead>
-                                    <TableHead>Spread %</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {combinedMarketData
-                                    .filter(data => data.ticker.toLowerCase().includes(filterTicker.toLowerCase()))
-                                    .map((data) => {
-                                        const sortedMarkets = [...data.markets].sort((a, b) => a.price - b.price);
-                                        const lowestPrice = sortedMarkets[0].price;
-                                        const highestPrice = sortedMarkets[sortedMarkets.length - 1].price;
-
-                                        return sortedMarkets.map((market, marketIndex) => {
-                                            const isSelected = selectedRows.some(row => 
-                                                row.ticker === data.ticker && row.market === market.market
-                                            );
-                                            
-                                            return (
-                                                <TableRow 
-                                                    key={`${data.ticker}-${market.market}`}
-                                                    className={cn(
-                                                        "cursor-pointer hover:bg-muted/50",
-                                                        isSelected && "bg-muted"
-                                                    )}
-                                                    onClick={() => toggleRowSelection(data.ticker, market.market, market.price)}
-                                                >
-                                                    {marketIndex === 0 && (
-                                                        <TableCell className="font-medium" rowSpan={sortedMarkets.length}>
-                                                            {data.ticker}
-                                                        </TableCell>
-                                                    )}
-                                                    <TableCell>{market.market}</TableCell>
-                                                    <TableCell className={
-                                                        market.price === lowestPrice 
-                                                            ? 'text-green-500'
-                                                            : market.price === highestPrice 
-                                                                ? 'text-red-500'
-                                                                : ''
-                                                    }>
-                                                        ${market.price.toFixed(8)}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        ${market.volume.toFixed(2)}
-                                                    </TableCell>
-                                                    <TableCell className={
-                                                        market.price === lowestPrice 
-                                                            ? 'text-green-500 font-bold'
-                                                            : market.price === highestPrice 
-                                                                ? 'text-red-500 font-bold'
-                                                                : ''
-                                                    }>
-                                                        {market.price === lowestPrice ? '[BUY]' : market.price === highestPrice ? '[SELL]' : '-'}
-                                                    </TableCell>
-                                                    {marketIndex === 0 && (
-                                                        <TableCell 
-                                                            className="font-semibold text-green-500" 
-                                                            rowSpan={sortedMarkets.length}
-                                                        >
-                                                            {selectedRows.length === 2 && 
-                                                             selectedRows[0].ticker === data.ticker && 
-                                                             selectedRows[1].ticker === data.ticker ? (
-                                                                calculateSelectedSpread()?.toFixed(2)
-                                                            ) : (
-                                                                data.maxSpread.toFixed(2)
-                                                            )}%
-                                                        </TableCell>
-                                                    )}
-                                                </TableRow>
-                                            );
-                                        });
-                                    })}
-                                {combinedMarketData.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                            {isLoading ? (
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Loading market data...
-                                                </div>
-                                            ) : (
-                                                "No arbitrage opportunities found"
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    
-                    {error && (
-                        <div className="text-sm text-muted-foreground mt-2">
-                            {error}
-                        </div>
-                    )}
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div className="flex flex-wrap gap-4 items-center">
+                            <div className="flex items-center space-x-2">
+                                <Label htmlFor="min-volume">Min Volume ($):</Label>
+                                <Input
+                                    id="min-volume"
+                                    type="number"
+                                    placeholder="Min volume"
+                                    value={minVolume}
+                                    onChange={(e) => setMinVolume(Number(e.target.value))}
+                                    className="max-w-24"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch id="ignore-zero-volume" checked={ignoreZeroVolume} onCheckedChange={setIgnoreZeroVolume} />
+                                <Label htmlFor="ignore-zero-volume">Ignore Zero Volume</Label>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {isLoading && progress.total > 0 && (
+                                <div className="text-sm text-muted-foreground">
+                                    Loading: {Math.min(progress.current, progress.total)}/{progress.total}
+                                </div>
+                            )}
+                            <div className="text-sm text-muted-foreground">
+                                Total Tokens: {tokens.length}
+                            </div>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="flex gap-2 flex-wrap items-start">
+                            {Object.keys(MARKETS).sort((a, b) => a.localeCompare(b)).map(market => {
+                                const marketConfig = MARKETS[market];
+                                const isAvailable = allMarkets.includes(market);
+                                
+                                return (
+                                    <Button
+                                        key={market}
+                                        variant={hiddenMarkets.has(market) ? "default" : "outline"}
+                                        onClick={() => isAvailable && toggleMarket(market)}
+                                        className={cn(
+                                            "flex flex-col items-center gap-1 p-2 h-auto w-16",
+                                            !isAvailable && "opacity-50 cursor-not-allowed"
+                                        )}
+                                        title={`${marketConfig.displayName}${marketConfig.isKrc20Market ? ' (KRC20)' : ''}`}
+                                    >
+                                        <div className="relative">
+                                            <Avatar className="h-8 w-8 rounded-full">
+                                                <AvatarImage src={marketConfig.iconUrl} alt={marketConfig.displayName} className="object-cover" />
+                                                <AvatarFallback className="text-xs">{marketConfig.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="absolute -top-1 -right-1">
+                                                {hiddenMarkets.has(market) ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] text-center leading-tight max-w-full truncate">
+                                            {marketConfig.displayName}
+                                        </span>
+                                    </Button>
+                                );
+                            })}
+                            <Button variant="outline" onClick={showAllMarkets} className="flex flex-col items-center justify-center h-[68px] w-16 p-2">
+                                <Eye className="h-8 w-8" />
+                                <span className="text-[10px] mt-1">Show All</span>
+                            </Button>
+                        </div>
+
+                        <div className="relative overflow-x-auto border rounded-lg">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Ticker</TableHead>
+                                        <TableHead>Market</TableHead>
+                                        <TableHead>Price</TableHead>
+                                        <TableHead>Volume</TableHead>
+                                        <TableHead>Action</TableHead>
+                                        <TableHead>Spread %</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {combinedMarketData
+                                        .filter(data => data.ticker.toLowerCase().includes(filterTicker.toLowerCase()))
+                                        .map((data) => {
+                                            const sortedMarkets = [...data.markets].sort((a, b) => a.price - b.price);
+                                            const lowestPrice = sortedMarkets[0].price;
+                                            const highestPrice = sortedMarkets[sortedMarkets.length - 1].price;
+
+                                            return sortedMarkets.map((market, marketIndex) => {
+                                                const isSelected = selectedRows.some(row => 
+                                                    row.ticker === data.ticker && row.market === market.market
+                                                );
+                                                
+                                                return (
+                                                    <TableRow 
+                                                        key={`${data.ticker}-${market.market}`}
+                                                        className={cn(
+                                                            "cursor-pointer hover:bg-muted/50",
+                                                            isSelected && "bg-muted"
+                                                        )}
+                                                        onClick={() => toggleRowSelection(data.ticker, market.market, market.price)}
+                                                    >
+                                                        {marketIndex === 0 && (
+                                                            <TableCell className="font-medium" rowSpan={sortedMarkets.length}>
+                                                                {data.ticker}
+                                                            </TableCell>
+                                                        )}
+                                                        <TableCell>{market.market}</TableCell>
+                                                        <TableCell className={
+                                                            market.price === lowestPrice 
+                                                                ? 'text-green-500'
+                                                                : market.price === highestPrice 
+                                                                    ? 'text-red-500'
+                                                                    : ''
+                                                        }>
+                                                            ${market.price.toFixed(8)}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            ${market.volume.toFixed(2)}
+                                                        </TableCell>
+                                                        <TableCell className={
+                                                            market.price === lowestPrice 
+                                                                ? 'text-green-500 font-bold'
+                                                                : market.price === highestPrice 
+                                                                    ? 'text-red-500 font-bold'
+                                                                    : ''
+                                                        }>
+                                                            {market.price === lowestPrice ? '[BUY]' : market.price === highestPrice ? '[SELL]' : '-'}
+                                                        </TableCell>
+                                                        {marketIndex === 0 && (
+                                                            <TableCell 
+                                                                className="font-semibold text-green-500" 
+                                                                rowSpan={sortedMarkets.length}
+                                                            >
+                                                                {selectedRows.length === 2 && 
+                                                                 selectedRows[0].ticker === data.ticker && 
+                                                                 selectedRows[1].ticker === data.ticker ? (
+                                                                    calculateSelectedSpread()?.toFixed(2)
+                                                                ) : (
+                                                                    data.maxSpread.toFixed(2)
+                                                                )}%
+                                                            </TableCell>
+                                                        )}
+                                                    </TableRow>
+                                                );
+                                            });
+                                        })}
+                                    {combinedMarketData.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                                {isLoading ? (
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        Loading market data...
+                                                    </div>
+                                                ) : (
+                                                    "No arbitrage opportunities found"
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        
+                        {error && (
+                            <div className="text-sm text-muted-foreground mt-2">
+                                {error}
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     );
 };
 

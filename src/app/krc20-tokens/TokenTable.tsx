@@ -25,6 +25,7 @@ interface TokenData {
   logoUrl: string | null;
   creationDate: number;
   change24h?: number;
+  changePrice?: number;
 }
 
 const TokenTable = () => {
@@ -38,7 +39,7 @@ const TokenTable = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'top' | 'new'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'top' | 'new'>('top');
 
   useEffect(() => {
     const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
@@ -60,13 +61,9 @@ const TokenTable = () => {
       const response = await fetch('/api/krc20-tokens');
       if (!response.ok) throw new Error('Failed to fetch tokens');
       const data = await response.json();
-      
-      // Add random 24h changes for UI purposes
       const dataWithChanges = data.map((token: TokenData) => ({
         ...token,
-        change24h: Math.random() > 0.5 
-          ? Math.random() * 20 
-          : -Math.random() * 20
+        change24h: token.changePrice || 0
       }));
       
       setTokens(dataWithChanges);
@@ -132,7 +129,6 @@ const TokenTable = () => {
   const filteredTokens = useMemo(() => {
     let filtered = [...tokens];
     
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(token => 
@@ -186,11 +182,11 @@ const TokenTable = () => {
 
   return (
     <Card className="border rounded-xl shadow-sm bg-card overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent p-4 pb-0">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent p-2 pb-0">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-xl">KRC20 Tokens</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">Browse, search and analyze KRC20 tokens on Kaspa</p>
+            <p className="text-sm text-muted-foreground">Browse, search and analyze KRC20 tokens on Kaspa</p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">

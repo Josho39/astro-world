@@ -242,78 +242,68 @@ const TransactionTimeline = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-col space-y-4">
-        <div className="flex flex-row items-center justify-between">
-          <CardTitle>Wallet Watcher</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTransactions}
-            disabled={isLoading || !isValidAddress}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+    <div className="flex flex-col space-y-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-0 p-2">
+        <div>
+          <div>
+            <CardTitle className="text-xl">Transaction Timeline</CardTitle>
+            <p className="text-sm text-muted-foreground">View transaction history and balance changes over time</p>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+        <div className="flex items-center gap-2 w-full md:w-auto mt-3 md:mt-0">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Enter Kaspa address (kaspa:...)"
               value={address}
               onChange={handleAddressChange}
-              className={!isValidAddress && address ? 'border-destructive' : ''}
+              className={`pl-9 h-9 bg-background/80 border-primary/20 w-full ${!isValidAddress && address ? 'border-destructive' : ''}`}
             />
-            {!isValidAddress && address && (
-              <p className="text-destructive text-sm mt-1">Please enter a valid Kaspa address starting with kaspa:</p>
-            )}
           </div>
           <Button 
             onClick={fetchTransactions}
             disabled={!isValidAddress || isLoading}
             className="flex items-center gap-2"
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-4 w-4 mr-2" />
             Search
           </Button>
         </div>
-        {!address && (
-          <Alert>
-            <AlertDescription>Enter a Kaspa address to view its balance flow</AlertDescription>
-          </Alert>
-        )}
-      </CardHeader>
-      <CardContent>
-        {error ? (
-          <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-4 rounded-lg">
-            <AlertCircle className="h-4 w-4" />
-            <p>{error}</p>
-          </div>
-        ) : isLoading ? (
-          <div className="flex items-center justify-center h-40">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : transactions.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            {address ? 'No transactions found' : 'Enter an address to view transactions'}
-          </p>
-        ) : (
-          <div className="space-y-8">
-            <BalanceFlow
-              transactions={transactions}
-              mainAddress={address}
-            />
-            <div className="border-t pt-8">
-              <TransactionList
+      </div>
+      
+      <Card className="w-full">
+
+        <CardContent>
+          {error ? (
+            <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-4 rounded-lg">
+              <AlertCircle className="h-4 w-4" />
+              <p>{error}</p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : transactions.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              {address ? 'No transactions found' : 'Enter an address to view transactions'}
+            </p>
+          ) : (
+            <div className="space-y-1">
+              <BalanceFlow
                 transactions={transactions}
                 mainAddress={address}
               />
+              <div className="border-t pt-2">
+                <TransactionList
+                  transactions={transactions}
+                  mainAddress={address}
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

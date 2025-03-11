@@ -5,7 +5,7 @@ import ArbAnalyzer from './ArbAnalyzer';
 
 export default function ArbTrackerPage() {
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <ArbAnalyzer />
     </div>
   );

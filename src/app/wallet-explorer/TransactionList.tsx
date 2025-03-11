@@ -46,7 +46,7 @@ const TransactionPanel = ({ transaction, mainAddress }: { transaction: any; main
           )}
         </div>
         
-        <div className="flex-1 flex items-start justify-between gap-4">
+        <div className="flex-1 flex items-start justify-between gap-2">
           <div>
             <div className="text-sm font-medium truncate max-w-sm">
               {transaction.transaction_id}
@@ -83,7 +83,7 @@ const TransactionList = ({ transactions, mainAddress }: { transactions: any[]; m
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Transaction History</h2>
         <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ const TransactionList = ({ transactions, mainAddress }: { transactions: any[]; m
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-2">
         <div className="text-sm text-muted-foreground">
           Showing {currentPage * ITEMS_PER_PAGE + 1} to {Math.min((currentPage + 1) * ITEMS_PER_PAGE, sortedTransactions.length)} of {sortedTransactions.length} transactions
         </div>
