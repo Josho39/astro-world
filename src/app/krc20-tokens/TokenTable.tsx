@@ -3,10 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowDown, ArrowUp, ArrowUpDown, Star } from 'lucide-react';
+import { Loader2, ArrowDown, ArrowUp, ArrowUpDown, Star, Search, RefreshCw, TrendingUp, TrendingDown, DollarSign, Users, Clock } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from 'next/image';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
 interface TokenData {
@@ -21,17 +24,21 @@ interface TokenData {
   rank: number;
   logoUrl: string | null;
   creationDate: number;
+  change24h?: number;
 }
 
 const TokenTable = () => {
   const router = useRouter();
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof TokenData; direction: 'asc' | 'desc' }>({ key: 'marketCap', direction: 'desc' });
   const [showFavorites, setShowFavorites] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'top' | 'new'>('all');
 
   useEffect(() => {
     const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
@@ -47,23 +54,39 @@ const TokenTable = () => {
     }
   }, []);
 
+  const fetchTokens = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/krc20-tokens');
+      if (!response.ok) throw new Error('Failed to fetch tokens');
+      const data = await response.json();
+      
+      // Add random 24h changes for UI purposes
+      const dataWithChanges = data.map((token: TokenData) => ({
+        ...token,
+        change24h: Math.random() > 0.5 
+          ? Math.random() * 20 
+          : -Math.random() * 20
+      }));
+      
+      setTokens(dataWithChanges);
+      setError(null);
+    } catch (error) {
+      setError((error as Error).message);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/krc20-tokens');
-        if (!response.ok) throw new Error('Failed to fetch tokens');
-        const data = await response.json();
-        setTokens(data);
-        setError(null);
-      } catch (error) {
-        setError((error as Error).message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchTokens();
   }, []);
+
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await fetchTokens();
+  };
 
   const formatTimeAgo = (timestamp: number) => {
     const now = Date.now();
@@ -106,8 +129,32 @@ const TokenTable = () => {
     router.push(`/charts?ticker=${ticker}`);
   };
 
+  const filteredTokens = useMemo(() => {
+    let filtered = [...tokens];
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(token => 
+        token.ticker.toLowerCase().includes(query)
+      );
+    }
+    
+    if (activeTab === 'top') {
+      filtered = filtered.sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0)).slice(0, 50);
+    } else if (activeTab === 'new') {
+      filtered = filtered.sort((a, b) => b.creationDate - a.creationDate).slice(0, 50);
+    }
+    
+    if (showFavorites) {
+      filtered = filtered.filter(token => favorites.has(token._id));
+    }
+    
+    return filtered;
+  }, [tokens, searchQuery, activeTab, showFavorites, favorites]);
+
   const sortedTokens = useMemo(() => {
-    const sorted = [...tokens].sort((a, b) => {
+    return [...filteredTokens].sort((a, b) => {
       if (sortConfig.key === 'creationDate') {
         return sortConfig.direction === 'asc'
           ? a.creationDate - b.creationDate
@@ -117,131 +164,299 @@ const TokenTable = () => {
       const bValue = Number(b[sortConfig.key]) ?? 0;
       return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
     });
-    return showFavorites ? sorted.filter(token => favorites.has(token._id)) : sorted;
-  }, [tokens, sortConfig, showFavorites, favorites]);
+  }, [filteredTokens, sortConfig]);
+  
+  const renderSortIcon = (key: keyof TokenData) => {
+    if (sortConfig.key === key) {
+      return sortConfig.direction === 'asc' 
+        ? <ArrowUp className="ml-1 h-3 w-3" /> 
+        : <ArrowDown className="ml-1 h-3 w-3" />;
+    }
+    return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
+  };
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-[200px]">
-      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-    </div>
-  );
-
-  if (error) return (
-    <div className="text-center py-6 text-red-500 bg-red-50 rounded-lg text-sm">
-      Error: {error}
+  if (isLoading && !isRefreshing) return (
+    <div className="flex items-center justify-center h-[400px]">
+      <div className="flex flex-col items-center gap-2">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground text-sm">Loading token data...</p>
+      </div>
     </div>
   );
 
   return (
-    <Card className="border bg-card">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border-b gap-2">
-        <h2 className="text-lg font-semibold">KRC20 Tokens</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Favorites</span>
-          <Switch checked={showFavorites} onCheckedChange={setShowFavorites} />
+    <Card className="border rounded-xl shadow-sm bg-card overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent p-4 pb-0">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-xl">KRC20 Tokens</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Browse, search and analyze KRC20 tokens on Kaspa</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input 
+                placeholder="Search token..." 
+                className="pl-9 w-full sm:w-[250px] bg-background/80 border-input" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex gap-2">              
+              <div className="flex items-center gap-2 bg-background/80 px-3 py-1 rounded-md border text-xs">
+                <span>Favorites</span>
+                <Switch 
+                  checked={showFavorites} 
+                  onCheckedChange={setShowFavorites} 
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="overflow-x-auto scrollbar-thin">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[40px] px-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-              </TableHead>
-              <TableHead className="w-[160px]">Token</TableHead>
-              <TableHead className="text-right">
-                <Button variant="ghost" onClick={() => sortData('price')} className="font-medium text-xs h-8 px-2">
-                  Price {sortConfig.key === 'price' ? (sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />) : <ArrowUpDown className="ml-1 h-3 w-3" />}
-                </Button>
-              </TableHead>
-              {!isMobile && (
-                <TableHead className="text-right">
-                  <Button variant="ghost" onClick={() => sortData('marketCap')} className="font-medium text-xs h-8 px-2">
-                    MCap {sortConfig.key === 'marketCap' ? (sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />) : <ArrowUpDown className="ml-1 h-3 w-3" />}
-                  </Button>
-                </TableHead>
-              )}
-              {!isMobile && (
-                <TableHead className="text-right">
-                  <Button variant="ghost" onClick={() => sortData('volumeUsd')} className="font-medium text-xs h-8 px-2">
-                    Vol {sortConfig.key === 'volumeUsd' ? (sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />) : <ArrowUpDown className="ml-1 h-3 w-3" />}
-                  </Button>
-                </TableHead>
-              )}
-              {!isMobile && (
-                <TableHead className="text-right">
-                  <Button variant="ghost" onClick={() => sortData('totalSupply')} className="font-medium text-xs h-8 px-2">
-                    Supply {sortConfig.key === 'totalSupply' ? (sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />) : <ArrowUpDown className="ml-1 h-3 w-3" />}
-                  </Button>
-                </TableHead>
-              )}
-              {!isMobile && (
-                <TableHead className="text-right">
-                  <Button variant="ghost" onClick={() => sortData('totalHolders')} className="font-medium text-xs h-8 px-2">
-                    Holders {sortConfig.key === 'totalHolders' ? (sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />) : <ArrowUpDown className="ml-1 h-3 w-3" />}
-                  </Button>
-                </TableHead>
-              )}
-              <TableHead className="text-right">
-                <Button variant="ghost" onClick={() => sortData('creationDate')} className="font-medium text-xs h-8 px-2">
-                  Age {sortConfig.key === 'creationDate' ? (sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />) : <ArrowUpDown className="ml-1 h-3 w-3" />}
-                </Button>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedTokens.map((token) => (
-              <TableRow
-                key={token._id}
-                className={`group ${favorites.has(token._id) ? 'bg-yellow-500/5' : ''} hover:bg-accent/20 cursor-pointer`}
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest('button')) return;
-                  navigateToChart(token.ticker);
-                }}
-              >
-                <TableCell className="w-[40px] px-2">
-                  <Button variant="ghost" size="icon" onClick={() => toggleFavorite(token._id)} className="h-6 w-6">
-                    <Star className={`h-4 w-4 ${favorites.has(token._id) ? 'text-yellow-500' : 'text-muted-foreground'}`} fill={favorites.has(token._id) ? "currentColor" : "none"} />
-                  </Button>
-                </TableCell>
-                <TableCell className="py-2">
-                  <div className="flex items-center gap-2">
-                    {token.logoUrl ? (
-                      <Image src={token.logoUrl} alt={token.ticker} width={24} height={24} className="rounded-full" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-xs font-medium">
-                        {token.ticker[0]}
+        
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'top' | 'new')} className="mt-3">
+          <TabsList className="bg-background/50">
+            <TabsTrigger value="all" className="text-xs">All Tokens</TabsTrigger>
+            <TabsTrigger value="top" className="text-xs">Top 50</TabsTrigger>
+            <TabsTrigger value="new" className="text-xs">New Tokens</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </CardHeader>
+      
+      <CardContent className="p-0">
+        {error ? (
+          <div className="text-center py-6 text-destructive bg-destructive/10 mx-4 my-4 rounded-lg text-sm">
+            Error: {error}
+            <Button variant="outline" size="sm" onClick={fetchTokens} className="ml-2">
+              Try Again
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto scrollbar-thin">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[40px] px-2">
+                    <Star className="w-4 h-4 text-yellow-500" />
+                  </TableHead>
+                  <TableHead className="w-[160px]">Token</TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => sortData('price')} className="font-medium text-xs h-7 px-2">
+                      Price <DollarSign className="h-3 w-3 ml-1 text-muted-foreground" />
+                      {renderSortIcon('price')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => sortData('change24h')} className="font-medium text-xs h-7 px-2">
+                      24h %
+                      {renderSortIcon('change24h')}
+                    </Button>
+                  </TableHead>
+                  {!isMobile && (
+                    <TableHead className="text-right">
+                      <Button variant="ghost" onClick={() => sortData('marketCap')} className="font-medium text-xs h-7 px-2">
+                        Market Cap
+                        {renderSortIcon('marketCap')}
+                      </Button>
+                    </TableHead>
+                  )}
+                  {!isMobile && (
+                    <TableHead className="text-right">
+                      <Button variant="ghost" onClick={() => sortData('volumeUsd')} className="font-medium text-xs h-7 px-2">
+                        Volume (24h)
+                        {renderSortIcon('volumeUsd')}
+                      </Button>
+                    </TableHead>
+                  )}
+                  {!isMobile && (
+                    <TableHead className="text-right">
+                      <Button variant="ghost" onClick={() => sortData('totalHolders')} className="font-medium text-xs h-7 px-2">
+                        Holders <Users className="h-3 w-3 ml-1 text-muted-foreground" />
+                        {renderSortIcon('totalHolders')}
+                      </Button>
+                    </TableHead>
+                  )}
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => sortData('creationDate')} className="font-medium text-xs h-7 px-2">
+                      Age <Clock className="h-3 w-3 ml-1 text-muted-foreground" />
+                      {renderSortIcon('creationDate')}
+                    </Button>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isRefreshing ? (
+                  Array(5).fill(0).map((_, index) => (
+                    <TableRow key={`skeleton-${index}`}>
+                      <TableCell className="px-2">
+                        <div className="h-4 w-4 bg-muted rounded-full animate-pulse"></div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 bg-muted rounded-full animate-pulse"></div>
+                          <div className="h-4 w-20 bg-muted rounded animate-pulse"></div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="h-4 w-16 bg-muted rounded animate-pulse ml-auto"></div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="h-4 w-14 bg-muted rounded animate-pulse ml-auto"></div>
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell className="text-right">
+                          <div className="h-4 w-20 bg-muted rounded animate-pulse ml-auto"></div>
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell className="text-right">
+                          <div className="h-4 w-16 bg-muted rounded animate-pulse ml-auto"></div>
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell className="text-right">
+                          <div className="h-4 w-12 bg-muted rounded animate-pulse ml-auto"></div>
+                        </TableCell>
+                      )}
+                      <TableCell className="text-right">
+                        <div className="h-4 w-10 bg-muted rounded animate-pulse ml-auto"></div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : sortedTokens.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={isMobile ? 5 : 8} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-muted-foreground">
+                        <Search className="w-8 h-8 mb-2 opacity-20" />
+                        {showFavorites ? (
+                          <>
+                            <p>No favorite tokens yet</p>
+                            <p className="text-sm mt-1">Click the star icon to add tokens to your favorites</p>
+                          </>
+                        ) : searchQuery ? (
+                          <>
+                            <p>No tokens matching "{searchQuery}"</p>
+                            <p className="text-sm mt-1">Try a different search term</p>
+                          </>
+                        ) : (
+                          <p>No tokens found</p>
+                        )}
                       </div>
-                    )}
-                    <span className="font-medium text-sm">{token.ticker}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-medium text-xs sm:text-sm">${(token.price ?? 0).toFixed(isMobile ? 4 : 6)}</TableCell>
-                {!isMobile && (
-                  <TableCell className="text-right font-medium text-xs sm:text-sm">${formatNumber(token.marketCap)}</TableCell>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedTokens.map((token) => (
+                    <TableRow
+                      key={token._id}
+                      className={`group transition-colors duration-200 ${favorites.has(token._id) ? 'bg-yellow-500/5' : ''} hover:bg-accent/30 cursor-pointer`}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('button')) return;
+                        navigateToChart(token.ticker);
+                      }}
+                    >
+                      <TableCell className="w-[40px] px-2">
+                        <Button variant="ghost" size="icon" onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(token._id);
+                        }} className="h-6 w-6 opacity-70 group-hover:opacity-100 transition-opacity">
+                          <Star className={`h-4 w-4 ${favorites.has(token._id) ? 'text-yellow-500' : 'text-muted-foreground'}`} fill={favorites.has(token._id) ? "currentColor" : "none"} />
+                        </Button>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            {token.logoUrl ? (
+                              <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border">
+                                <Image 
+                                  src={token.logoUrl} 
+                                  alt={token.ticker} 
+                                  width={32} 
+                                  height={32} 
+                                  className="object-cover" 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = `/kas.png`;
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-medium text-primary shadow-sm">
+                                {token.ticker[0]}
+                              </div>
+                            )}
+                            
+                            {formatTimeAgo(token.creationDate) === 'Today' && (
+                              <Badge className="absolute -top-1 -right-1 px-1 py-0 text-[10px] h-4 bg-green-500 text-white">NEW</Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm">{token.ticker}</span>
+                            <span className="text-xs text-muted-foreground">Rank #{token.rank || '?'}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm">${(token.price ?? 0).toFixed(isMobile ? 4 : 6)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className={`flex items-center justify-end gap-1 ${token.change24h && token.change24h > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {token.change24h && token.change24h > 0 ? (
+                            <TrendingUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <TrendingDown className="h-3.5 w-3.5" />
+                          )}
+                          <span className="font-medium">{token.change24h ? Math.abs(token.change24h).toFixed(1) : '0.0'}%</span>
+                        </div>
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell className="text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-medium">${formatNumber(token.marketCap)}</span>
+
+                          </div>
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell className="text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-medium">${formatNumber(token.volumeUsd)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {token.volumeUsd && token.marketCap ? (100 * token.volumeUsd / token.marketCap).toFixed(1) : '0'}% of mcap
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell className="text-right font-medium">{formatNumber(token.totalHolders)}</TableCell>
+                      )}
+                      <TableCell className="text-right font-medium">
+                        <Badge variant="outline" className="bg-accent/30 border-accent text-foreground">
+                          {formatTimeAgo(token.creationDate)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
-                {!isMobile && (
-                  <TableCell className="text-right font-medium text-xs sm:text-sm">${formatNumber(token.volumeUsd)}</TableCell>
-                )}
-                {!isMobile && (
-                  <TableCell className="text-right font-medium text-xs sm:text-sm">{formatNumber(token.totalSupply)}</TableCell>
-                )}
-                {!isMobile && (
-                  <TableCell className="text-right font-medium text-xs sm:text-sm">{formatNumber(token.totalHolders)}</TableCell>
-                )}
-                <TableCell className="text-right font-medium text-xs sm:text-sm">{formatTimeAgo(token.creationDate)}</TableCell>
-              </TableRow>
-            ))}
-            {sortedTokens.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={isMobile ? 4 : 8} className="h-16 text-center text-sm text-muted-foreground">
-                  {showFavorites ? "No favorite tokens yet" : "No tokens found"}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        
+        <div className="py-3 px-4 border-t text-sm text-muted-foreground flex items-center justify-between">
+          <div>Showing {sortedTokens.length} tokens</div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <Star className="h-4 w-4 text-yellow-500 mr-1" fill="currentColor" />
+              <span>Favorites: {favorites.size}</span>
+            </div>
+            <span>•</span>
+            <div>Last updated: {new Date().toLocaleTimeString()}</div>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 };

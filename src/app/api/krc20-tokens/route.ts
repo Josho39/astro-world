@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const API_URL = 'https://api.kaspa.com/krc20?skip=0&limit=100&timeInterval=7d';
+const API_URL = 'https://api.kaspa.com/krc20?skip=0&limit=100&timeInterval=1d';
 
 export async function GET() {
     try {

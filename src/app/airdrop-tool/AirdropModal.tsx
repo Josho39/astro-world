@@ -1,10 +1,8 @@
-'use client';
-
 import React from 'react';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 interface AirdropModalProps {
     isOpen: boolean;
