@@ -673,50 +673,9 @@ const MintWatcher = () => {
                         </div>
                     </div>
 
-                    <div className="mt-2 p-3 md:p-4">
-                        <TabsContent value="recent-mints" className="mt-2 space-y-4">
+                    <div className="mt-1 p-3 md:p-2">
+                        <TabsContent value="recent-mints" className="mt-0 space-y-1">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-                                <div className="flex flex-wrap gap-2 items-center">
-                                    {selectedCollection ? (
-                                        <Button variant="outline" size="sm" onClick={clearCollectionFilter}>
-                                            View All Collections
-                                        </Button>
-                                    ) : (
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                id="watched-filter"
-                                                checked={showWatchedOnly}
-                                                onCheckedChange={toggleShowWatchedOnly}
-                                            />
-                                            <label htmlFor="watched-filter" className="text-sm font-medium cursor-pointer flex items-center">
-                                                <Bell className="h-4 w-4 mr-1" />
-                                                Show watched only
-                                            </label>
-                                        </div>
-                                    )}
-
-                                    <Separator orientation="vertical" className="h-6 hidden sm:block" />
-
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className={cn("p-1", viewMode === 'grid' ? "bg-muted" : "")}
-                                            onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                                        >
-                                            <LayoutGrid className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className={cn("p-1", viewMode === 'list' ? "bg-muted" : "")}
-                                            onClick={() => viewMode !== 'list' && toggleViewMode()}
-                                        >
-                                            <LayoutList className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-
                                 <div className="text-xs text-muted-foreground">
                                     {filteredMints.length} {filteredMints.length === 1 ? 'mint' : 'mints'} found
                                 </div>

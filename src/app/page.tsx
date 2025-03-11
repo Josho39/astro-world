@@ -27,6 +27,8 @@ const Dashboard = () => {
   const [arbOpportunities, setArbOpportunities] = useState<ArbOpportunity[]>([]);
   const [recentMints, setRecentMints] = useState<NFTMint[]>([]);
   const [trendingCollections, setTrendingCollections] = useState<any[]>([]);
+  const [kaspaComCollections, setKaspaComCollections] = useState<any[]>([]);
+  const [combinedCollections, setCombinedCollections] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
   const [selectedTokens, setSelectedTokens] = useState<Record<string, boolean>>({});
   const [chartData, setChartData] = useState<{ date: string; price: number }[]>([]);
@@ -86,6 +88,42 @@ const Dashboard = () => {
       fetchNftSalesData('NACHO');
     }
   }, []);
+
+  useEffect(() => {
+    if (trendingCollections.length > 0 || kaspaComCollections.length > 0) {
+      const combinedData = [...trendingCollections];
+
+      kaspaComCollections.forEach(kaspaItem => {
+        const existingIndex = combinedData.findIndex(item =>
+          item.tick?.toLowerCase() === kaspaItem.tick?.toLowerCase()
+        );
+
+        const standardThumbnailUrl = `https://cache.krc721.stream/krc721/mainnet/thumbnail/${kaspaItem.tick}/1`;
+
+        if (existingIndex === -1) {
+          combinedData.push({
+            tick: kaspaItem.tick,
+            thumbnail_url: standardThumbnailUrl,
+            floorPrice: kaspaItem.floorPrice || (kaspaItem.price ? kaspaItem.price.toString() : "0"),
+            totalSupply: kaspaItem.supply || 1000,
+            volume24h: kaspaItem.volume24h || 0,
+            change24h: kaspaItem.change24h?.toString() || "0"
+          });
+        } else {
+          const existing = combinedData[existingIndex];
+          combinedData[existingIndex] = {
+            ...existing,
+            thumbnail_url: existing.thumbnail_url || standardThumbnailUrl,
+            volume24h: Math.max(existing.volume24h || 0, kaspaItem.volume24h || 0),
+            floorPrice: existing.floorPrice || kaspaItem.floorPrice || (kaspaItem.price ? kaspaItem.price.toString() : "0"),
+            change24h: existing.change24h || kaspaItem.change24h?.toString() || "0"
+          };
+        }
+      });
+
+      setCombinedCollections(combinedData);
+    }
+  }, [trendingCollections, kaspaComCollections]);
 
   useEffect(() => {
     if (walletConnected && walletInfo && walletInfo.address) {
@@ -278,6 +316,7 @@ const Dashboard = () => {
       try {
         const mintsResponse = await fetch('/api/krc721/new-mints/recent');
         const marketsResponse = await fetch('https://markets.krc20.stream/krc721/mainnet/markets');
+        const nftHoldingsResponse = await fetch('/api/nft-holdings');
 
         if (mintsResponse.ok && marketsResponse.ok) {
           const mintsData = await mintsResponse.json();
@@ -295,9 +334,11 @@ const Dashboard = () => {
                   change_24h: 0
                 };
 
+                const standardThumbnailUrl = `https://cache.krc721.stream/krc721/mainnet/thumbnail/${mint.tick}/1`;
+
                 collectionsMap.set(mint.tick, {
                   tick: mint.tick,
-                  thumbnail_url: mint.thumbnail_url,
+                  thumbnail_url: standardThumbnailUrl,
                   floorPrice: marketInfo.floor_price.toFixed(1),
                   totalSupply: mint.total_supply || 1000,
                   volume24h: marketInfo.volume_24h || marketInfo.total_volume / 10,
@@ -309,6 +350,24 @@ const Dashboard = () => {
 
             const trendingCollections = Array.from(collectionsMap.values());
             setTrendingCollections(trendingCollections);
+
+            if (nftHoldingsResponse.ok) {
+              const nftHoldingsData = await nftHoldingsResponse.json();
+              if (nftHoldingsData.kaspacom && Array.isArray(nftHoldingsData.kaspacom)) {
+                const kaspaComData = nftHoldingsData.kaspacom.map((item: any) => {
+                  const ticker = item.ticker || item.tick || '';
+                  return {
+                    tick: ticker,
+                    image: `https://cache.krc721.stream/krc721/mainnet/thumbnail/${ticker}/1`,
+                    floorPrice: item.floorPrice?.toString() || item.price?.toString() || "0",
+                    supply: item.supply || item.totalSupply || 1000,
+                    volume24h: item.volume24h || 0,
+                    change24h: item.change24h?.toString() || "0"
+                  };
+                });
+                setKaspaComCollections(kaspaComData);
+              }
+            }
 
             const floorChanges = trendingCollections.map(coll => ({
               name: coll.tick,
@@ -333,7 +392,7 @@ const Dashboard = () => {
             }
 
             setNftMarketStats({
-              totalVolume: trendingCollections.reduce((sum, coll) => sum + coll.volume24h, 0),
+              totalVolume: trendingCollections.reduce((sum, coll) => sum + (coll.volume24h || 0), 0),
               floorChanges: floorChanges.slice(0, 5),
               topSales: topSales.sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
             });
@@ -580,7 +639,7 @@ const Dashboard = () => {
                     </Link>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     {isLoading ? (
                       Array(6).fill(0).map((_, index) => (
                         <div key={index} className="animate-pulse">
@@ -950,14 +1009,14 @@ const Dashboard = () => {
                       <div className="mt-1">
                         <div className="text-xl font-bold">${token.price?.toFixed(6) || "0.000000"}</div>
                         <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                          <span>Vol: ${token.volumeUsd?.toLocaleString() || "0"}</span>
-                          <span>MCap: ${token.marketCap?.toLocaleString() || "0"}</span>
+                          <span>Vol: ${(token.volumeUsd || 0).toLocaleString()}</span>
+                          <span>MCap: ${(token.marketCap || 0).toLocaleString()}</span>
                         </div>
                       </div>
 
                       <div className="mt-1 pt-1 border-t border-border/30">
                         <div className="flex justify-between text-xs">
-                          <span>Holders: {token.totalHolders?.toLocaleString() || "0"}</span>
+                          <span>Holders: {(token.totalHolders || 0).toLocaleString()}</span>
                           <span>Age: {new Date(token.creationDate || Date.now()).toLocaleDateString()}</span>
                         </div>
                       </div>
@@ -975,7 +1034,7 @@ const Dashboard = () => {
           <TabsContent value="portfolio" className="space-y-4">
             {walletConnected && walletInfo ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1020,7 +1079,7 @@ const Dashboard = () => {
                           <p className="text-sm text-muted-foreground">NFTs</p>
                           <h3 className="text-2xl font-bold">{nftHoldings.length}</h3>
                           <p className="text-sm text-muted-foreground mt-1">
-                            ${(nftHoldings.reduce((total, nft) => total + nft.value, 0)).toFixed(1)}
+                            ${(nftHoldings.reduce((total, nft) => total + (nft.value || 0), 0)).toFixed(1)}
                           </p>
                         </div>
                         <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
@@ -1031,13 +1090,13 @@ const Dashboard = () => {
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2">
                   <Card>
                     <CardHeader className="p-4">
                       <CardTitle className="text-lg">Token Holdings</CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                         {isLoading ? (
                           Array(6).fill(0).map((_, index) => (
                             <div key={index} className="flex items-center justify-between p-3 border border-border/40 rounded-md animate-pulse">
@@ -1098,7 +1157,7 @@ const Dashboard = () => {
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2">
                   <Card>
                     <CardHeader className="p-4">
                       <CardTitle className="text-lg">Portfolio Allocation</CardTitle>
@@ -1146,7 +1205,9 @@ const Dashboard = () => {
                       <div className="space-y-1 mt-4">
                         {portfolioData.map((token, index) => {
                           const usdValue = token.value * token.price;
-                          const percentage = (usdValue / portfolioStats.totalValue * 100).toFixed(1);
+                          const percentage = portfolioStats.totalValue > 0
+                            ? (usdValue / portfolioStats.totalValue * 100).toFixed(1)
+                            : "0.0";
 
                           return (
                             <div
@@ -1188,7 +1249,7 @@ const Dashboard = () => {
 
           <TabsContent value="nfts">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="md:col-span-2">
                   <Card className="h-full">
                     <CardHeader className="p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-b border-purple-500/20">
@@ -1203,52 +1264,26 @@ const Dashboard = () => {
                       </div>
                     </CardHeader>
 
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-3 gap-4 mb-6">
+                    <CardContent className="p-2">
+                      <div className="grid grid-cols-2 gap-2 mb-3">
                         <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
                           <h3 className="text-xs text-muted-foreground mb-1">24h Volume</h3>
                           <p className="text-xl font-bold flex items-center">
                             <DollarSign className="h-4 w-4 mr-1 text-purple-500" />
                             {nftStats24h
-                              ? (parseInt(nftStats24h.totalVolumeKasKaspiano) / 1000).toFixed(1)
+                              ? (parseInt(nftStats24h.totalVolumeKasKaspiano || "0") / 1000).toFixed(1)
                               : "0"}K KAS
                           </p>
-                          {nftStats24h && nftGlobalStats && (
-                            <p className="text-xs text-muted-foreground flex items-center mt-1">
-                              <Percent className="h-3 w-3 mr-1" />
-                              {((parseInt(nftStats24h.totalVolumeKasKaspiano) / parseInt(nftGlobalStats.totalVolumeKasKaspiano)) * 100).toFixed(1)}% of all-time
-                            </p>
-                          )}
+
                         </div>
                         <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
                           <h3 className="text-xs text-muted-foreground mb-1">24h Transactions</h3>
                           <p className="text-xl font-bold flex items-center">
                             <TrendingUp className="h-4 w-4 mr-1 text-blue-500" />
                             {nftStats24h
-                              ? nftStats24h.totalTradesKaspiano.toLocaleString()
+                              ? (nftStats24h.totalTradesKaspiano || 0).toLocaleString()
                               : "0"}
                           </p>
-                          {nftCollectionData && (
-                            <p className="text-xs text-muted-foreground flex items-center mt-1">
-                              <Wallet className="h-3 w-3 mr-1" />
-                              {nftCollectionData.totalHolders || 0} Total Holders
-                            </p>
-                          )}
-                        </div>
-                        <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
-                          <h3 className="text-xs text-muted-foreground mb-1">All-time Volume</h3>
-                          <p className="text-xl font-bold flex items-center">
-                            <Coins className="h-4 w-4 mr-1 text-amber-500" />
-                            {nftGlobalStats
-                              ? (parseInt(nftGlobalStats.totalVolumeKasKaspiano) / 1000).toFixed(1)
-                              : "0"}K KAS
-                          </p>
-                          {nftGlobalStats && (
-                            <p className="text-xs text-muted-foreground flex items-center mt-1">
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                              ${nftGlobalStats.totalVolumeUsdKaspiano} USD
-                            </p>
-                          )}
                         </div>
                       </div>
 
@@ -1309,57 +1344,7 @@ const Dashboard = () => {
                         )}
                       </div>
 
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold flex items-center">
-                          <Coins className="w-4 h-4 mr-1.5 text-blue-500" />
-                          Recent Sales
-                        </h3>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Collection</TableHead>
-                              <TableHead>Item</TableHead>
-                              <TableHead>Price</TableHead>
-                              <TableHead className="text-right">Time</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {isLoading ? (
-                              Array(5).fill(0).map((_, index) => (
-                                <TableRow key={index}>
-                                  <TableCell className="animate-pulse">
-                                    <div className="h-4 w-24 bg-muted rounded"></div>
-                                  </TableCell>
-                                  <TableCell className="animate-pulse">
-                                    <div className="h-4 w-16 bg-muted rounded"></div>
-                                  </TableCell>
-                                  <TableCell className="animate-pulse">
-                                    <div className="h-4 w-20 bg-muted rounded"></div>
-                                  </TableCell>
-                                  <TableCell className="text-right animate-pulse">
-                                    <div className="h-4 w-12 bg-muted rounded ml-auto"></div>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            ) : nftSalesData.length > 0 ? (
-                              nftSalesData.map((sale, index) => (
-                                <TableRow key={index} className="cursor-pointer hover:bg-accent/5" onClick={navigateToNFTExplorer}>
-                                  <TableCell className="font-medium">{sale.collection}</TableCell>
-                                  <TableCell>#{sale.tokenId}</TableCell>
-                                  <TableCell className="font-medium">{sale.price} KAS</TableCell>
-                                  <TableCell className="text-right text-muted-foreground">{sale.timeAgo}</TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
-                                  No recent NFT sales found
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-
+                      <div className="space-y-2">                        
                         <h3 className="text-sm font-semibold flex items-center pt-4">
                           <ChartIcon className="w-4 h-4 mr-1.5 text-green-500" />
                           Top Collections (24h)
@@ -1375,7 +1360,7 @@ const Dashboard = () => {
                           </TableHeader>
                           <TableBody>
                             {isLoading ? (
-                              Array(5).fill(0).map((_, index) => (
+                              Array(10).fill(0).map((_, index) => (
                                 <TableRow key={index}>
                                   <TableCell className="animate-pulse">
                                     <div className="h-4 w-24 bg-muted rounded"></div>
@@ -1395,9 +1380,9 @@ const Dashboard = () => {
                               nftTop24hCollections.slice(0, 10).map((collection, index) => (
                                 <TableRow key={index} className="cursor-pointer hover:bg-accent/5" onClick={navigateToNFTExplorer}>
                                   <TableCell className="font-medium">{collection.ticker}</TableCell>
-                                  <TableCell>{collection.totalVolume.toLocaleString()}</TableCell>
-                                  <TableCell>{collection.totalTrades}</TableCell>
-                                  <TableCell className="text-right">${parseFloat(collection.totalVolumeUsd).toLocaleString()}</TableCell>
+                                  <TableCell>{(collection.totalVolume || 0).toLocaleString()}</TableCell>
+                                  <TableCell>{collection.totalTrades || 0}</TableCell>
+                                  <TableCell className="text-right">${parseFloat(collection.totalVolumeUsd || "0").toLocaleString()}</TableCell>
                                 </TableRow>
                               ))
                             ) : (
@@ -1414,19 +1399,19 @@ const Dashboard = () => {
                   </Card>
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
                   <Card>
-                    <CardHeader className="p-4">
+                    <CardHeader className="p-2">
                       <CardTitle className="text-lg flex items-center">
                         <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
                         Top Collections by Floor Price
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-4 pb-4 pt-0">
+                    <CardContent className="px-2 pb-2 pt-0">
                       <div className="space-y-3">
                         {isLoading ? (
                           Array(5).fill(0).map((_, index) => (
-                            <div key={index} className="flex items-center gap-3 animate-pulse">
+                            <div key={index} className="flex items-center gap-2 animate-pulse">
                               <div className="w-10 h-10 rounded-md bg-muted"></div>
                               <div className="flex-1">
                                 <div className="h-4 w-24 bg-muted rounded mb-1"></div>
@@ -1435,12 +1420,12 @@ const Dashboard = () => {
                               <div className="h-5 w-12 bg-muted rounded"></div>
                             </div>
                           ))
-                        ) : trendingCollections.length > 0 ? (
-                          trendingCollections
+                        ) : combinedCollections.length > 0 ? (
+                          combinedCollections
                             .sort((a, b) => parseFloat(b.floorPrice) - parseFloat(a.floorPrice))
-                            .slice(0, 10)
+                            .slice(0, 5)
                             .map((collection, index) => (
-                              <div key={index} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5 transition-colors cursor-pointer" onClick={navigateToNFTExplorer}>
+                              <div key={index} className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors cursor-pointer" onClick={navigateToNFTExplorer}>
                                 <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
                                   <img
                                     src={collection.thumbnail_url || `/kas.png`}
@@ -1452,10 +1437,10 @@ const Dashboard = () => {
                                 <div className="flex-1">
                                   <div className="font-bold">{collection.tick}</div>
                                   <div className="text-xs text-muted-foreground">
-                                    Volume: {((collection.volume24h) / 1000).toFixed(1)}K KAS
+                                    Volume: {((collection.volume24h || 0) / 1000).toFixed(1)}K KAS
                                   </div>
                                 </div>
-                                <div className={parseFloat(collection.change24h) >= 0 ? 'text-green-500 text-sm font-medium' : 'text-red-500 text-sm font-medium'}>
+                                <div className={parseFloat(collection.change24h || "0") >= 0 ? 'text-green-500 text-sm font-medium' : 'text-red-500 text-sm font-medium'}>
                                   {collection.floorPrice} KAS
                                 </div>
                               </div>
@@ -1516,7 +1501,7 @@ const Dashboard = () => {
                           <div className="bg-purple-500/10 rounded-md p-3 border border-purple-500/20">
                             <div className="flex justify-between items-center">
                               <span className="text-xs text-muted-foreground">Total Value</span>
-                              <span className="text-sm font-bold">{nftHoldings.reduce((total, nft) => total + nft.value, 0).toFixed(2)} KAS</span>
+                              <span className="text-sm font-bold">{nftHoldings.reduce((total, nft) => total + (nft.value || 0), 0).toFixed(2)} KAS</span>
                             </div>
                             <div className="flex justify-between items-center mt-1">
                               <span className="text-xs text-muted-foreground">Collections</span>

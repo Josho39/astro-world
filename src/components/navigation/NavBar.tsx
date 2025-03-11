@@ -42,6 +42,12 @@ export const navItems = [
         category: 'krc721'
     },
     {
+        name: 'NFT Insights',
+        icon: <Eye className="w-5 h-5" />,
+        href: '/NFT-insight',
+        category: 'krc721'
+    },
+    {
         name: 'Mint Watcher',
         icon: <Star className="w-5 h-5" />,
         href: '/mint-watcher',
