@@ -27,6 +27,8 @@ interface TokenData {
   creationDate: number;
   change24h?: number;
   changePrice?: number;
+  changeMarketCap?: number;
+  changeVolumeUsd?: number;
 }
 
 const TokenTable = () => {
@@ -35,7 +37,7 @@ const TokenTable = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof TokenData; direction: 'asc' | 'desc' }>({ key: 'marketCap', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof TokenData; direction: 'asc' | 'desc' }>({ key: 'rank', direction: 'asc' });
   const [showFavorites, setShowFavorites] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
@@ -76,12 +78,8 @@ const TokenTable = () => {
       const response = await fetch('/api/krc20-tokens');
       if (!response.ok) throw new Error('Failed to fetch tokens');
       const data = await response.json();
-      const dataWithChanges = data.map((token: TokenData) => ({
-        ...token,
-        change24h: token.changePrice || 0
-      }));
       
-      setTokens(dataWithChanges);
+      setTokens(data);
       setError(null);
     } catch (error) {
       setError((error as Error).message);
@@ -116,31 +114,31 @@ const TokenTable = () => {
     if (typeof num !== 'number') return "0";
     
     if (currency === 'USD') {
-      // Convert to USD
-      const usdValue = num * kasToUsdRate;
-      
+      // Already in USD, no conversion needed
       if (isPrice) {
-        if (usdValue < 0.01) return `$${usdValue.toFixed(6)}`;
-        if (usdValue < 1) return `$${usdValue.toFixed(4)}`;
-        return `$${usdValue.toFixed(2)}`;
+        if (num < 0.01) return `$${num.toFixed(6)}`;
+        if (num < 1) return `$${num.toFixed(4)}`;
+        return `$${num.toFixed(2)}`;
       }
       
-      if (usdValue >= 1e9) return `$${(usdValue / 1e9).toFixed(1)}B`;
-      if (usdValue >= 1e6) return `$${(usdValue / 1e6).toFixed(1)}M`;
-      if (usdValue >= 1e3) return `$${(usdValue / 1e3).toFixed(1)}K`;
-      return `$${usdValue.toFixed(2)}`;
+      if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
+      if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
+      if (num >= 1e3) return `$${(num / 1e3).toFixed(1)}K`;
+      return `$${num.toFixed(2)}`;
     } else {
-      // Original KAS value
+      // Convert USD to KAS
+      const kasValue = num / kasToUsdRate;
+      
       if (isPrice) {
-        if (num < 0.01) return `${num.toFixed(6)} KAS`;
-        if (num < 1) return `${num.toFixed(4)} KAS`;
-        return `${num.toFixed(2)} KAS`;
+        if (kasValue < 0.01) return `${kasValue.toFixed(6)} KAS`;
+        if (kasValue < 1) return `${kasValue.toFixed(4)} KAS`;
+        return `${kasValue.toFixed(2)} KAS`;
       }
       
-      if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B KAS`;
-      if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M KAS`;
-      if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K KAS`;
-      return `${num.toFixed(2)} KAS`;
+      if (kasValue >= 1e9) return `${(kasValue / 1e9).toFixed(1)}B KAS`;
+      if (kasValue >= 1e6) return `${(kasValue / 1e6).toFixed(1)}M KAS`;
+      if (kasValue >= 1e3) return `${(kasValue / 1e3).toFixed(1)}K KAS`;
+      return `${kasValue.toFixed(2)} KAS`;
     }
   };
 
@@ -177,7 +175,7 @@ const TokenTable = () => {
     }
     
     if (activeTab === 'top') {
-      filtered = filtered.sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0)).slice(0, 50);
+      filtered = filtered.sort((a, b) => a.rank - b.rank).slice(0, 50);
     } else if (activeTab === 'new') {
       filtered = filtered.sort((a, b) => b.creationDate - a.creationDate).slice(0, 50);
     }
@@ -190,6 +188,14 @@ const TokenTable = () => {
   }, [tokens, searchQuery, activeTab, showFavorites, favorites]);
 
   const sortedTokens = useMemo(() => {
+    if (sortConfig.key === 'rank') {
+      return [...filteredTokens].sort((a, b) => {
+        return sortConfig.direction === 'asc' 
+          ? a.rank - b.rank 
+          : b.rank - a.rank;
+      });
+    }
+    
     return [...filteredTokens].sort((a, b) => {
       if (sortConfig.key === 'creationDate') {
         return sortConfig.direction === 'asc'
@@ -296,17 +302,11 @@ const TokenTable = () => {
                   <TableHead className="w-[40px] px-2">
                     <Star className="w-4 h-4 text-yellow-500" />
                   </TableHead>
-                  <TableHead className="w-[160px]">Token</TableHead>
+                  <TableHead className="w-[140px]">Token</TableHead>
                   <TableHead className="text-right">
                     <Button variant="ghost" onClick={() => sortData('price')} className="font-medium text-xs h-7 px-2">
                       Price {currency === "USD" ? <DollarSign className="h-3 w-3 ml-1 text-muted-foreground" /> : null}
                       {renderSortIcon('price')}
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">
-                    <Button variant="ghost" onClick={() => sortData('change24h')} className="font-medium text-xs h-7 px-2">
-                      24h %
-                      {renderSortIcon('change24h')}
                     </Button>
                   </TableHead>
                   <TableHead className="text-right">
@@ -315,23 +315,21 @@ const TokenTable = () => {
                       {renderSortIcon('marketCap')}
                     </Button>
                   </TableHead>
-                  {!isMobile && (
-                    <TableHead className="text-right">
-                      <Button variant="ghost" onClick={() => sortData('volumeUsd')} className="font-medium text-xs h-7 px-2">
-                        Volume (24h)
-                        {renderSortIcon('volumeUsd')}
-                      </Button>
-                    </TableHead>
-                  )}
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => sortData('volumeUsd')} className="font-medium text-xs h-7 px-2">
+                      Volume (24h)
+                      {renderSortIcon('volumeUsd')}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">
                     <Button variant="ghost" onClick={() => sortData('totalHolders')} className="font-medium text-xs h-7 px-2">
-                      Holders <Users className="h-3 w-3 ml-1 text-muted-foreground" />
+                      Holders
                       {renderSortIcon('totalHolders')}
                     </Button>
                   </TableHead>
                   <TableHead className="text-right">
                     <Button variant="ghost" onClick={() => sortData('creationDate')} className="font-medium text-xs h-7 px-2">
-                      Age <Clock className="h-3 w-3 ml-1 text-muted-foreground" />
+                      Age
                       {renderSortIcon('creationDate')}
                     </Button>
                   </TableHead>
@@ -354,16 +352,11 @@ const TokenTable = () => {
                         <div className="h-4 w-16 bg-muted rounded animate-pulse ml-auto"></div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="h-4 w-14 bg-muted rounded animate-pulse ml-auto"></div>
-                      </TableCell>
-                      <TableCell className="text-right">
                         <div className="h-4 w-20 bg-muted rounded animate-pulse ml-auto"></div>
                       </TableCell>
-                      {!isMobile && (
-                        <TableCell className="text-right">
-                          <div className="h-4 w-16 bg-muted rounded animate-pulse ml-auto"></div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <div className="h-4 w-16 bg-muted rounded animate-pulse ml-auto"></div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="h-4 w-12 bg-muted rounded animate-pulse ml-auto"></div>
                       </TableCell>
@@ -374,7 +367,7 @@ const TokenTable = () => {
                   ))
                 ) : sortedTokens.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isMobile ? 6 : 8} className="h-32 text-center">
+                    <TableCell colSpan={7} className="h-32 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <Search className="w-8 h-8 mb-2 opacity-20" />
                         {showFavorites ? (
@@ -415,12 +408,12 @@ const TokenTable = () => {
                         <div className="flex items-center gap-2">
                           <div className="relative">
                             {token.logoUrl ? (
-                              <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border">
+                              <div className="w-7 h-7 rounded-full overflow-hidden shadow-sm border">
                                 <Image 
                                   src={token.logoUrl} 
                                   alt={token.ticker} 
-                                  width={32} 
-                                  height={32} 
+                                  width={28} 
+                                  height={28} 
                                   className="object-cover" 
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = `/kas.png`;
@@ -428,7 +421,7 @@ const TokenTable = () => {
                                 />
                               </div>
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-medium text-primary shadow-sm">
+                              <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-medium text-primary shadow-sm">
                                 {token.ticker[0]}
                               </div>
                             )}
@@ -439,42 +432,49 @@ const TokenTable = () => {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-sm">{token.ticker}</span>
-                            <span className="text-xs text-muted-foreground">Rank #{token.rank || '?'}</span>
+                            <span className="text-xs text-muted-foreground">#{token.rank}</span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium">
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm">{formatNumber(token.price, true)}</span>
-                        </div>
-                      </TableCell>
                       <TableCell className="text-right">
-                        <div className={`flex items-center justify-end gap-1 ${token.change24h && token.change24h > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {token.change24h && token.change24h > 0 ? (
-                            <TrendingUp className="h-3.5 w-3.5" />
-                          ) : (
-                            <TrendingDown className="h-3.5 w-3.5" />
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-medium">{formatNumber(token.price, true)}</span>
+                          {token.change24h && (
+                            <div className={`flex items-center text-xs ${token.change24h > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {token.change24h > 0 ? (
+                                <TrendingUp className="h-3 w-3 mr-0.5" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 mr-0.5" />
+                              )}
+                              <span>{Math.abs(token.change24h).toFixed(1)}%</span>
+                            </div>
                           )}
-                          <span className="font-medium">{token.change24h ? Math.abs(token.change24h).toFixed(1) : '0.0'}%</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col items-end">
-                          <span className="font-medium">{formatNumber(token.marketCap)}</span>
+                          <span className="text-sm font-medium">{formatNumber(token.marketCap)}</span>
+                          {token.changeMarketCap && (
+                            <span className={`text-xs ${token.changeMarketCap > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {token.changeMarketCap > 0 ? '+' : ''}{token.changeMarketCap.toFixed(1)}%
+                            </span>
+                          )}
                         </div>
                       </TableCell>
-                      {!isMobile && (
-                        <TableCell className="text-right">
-                          <div className="flex flex-col items-end">
-                            <span className="font-medium">{formatNumber(token.volumeUsd)}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {token.volumeUsd && token.marketCap ? (100 * token.volumeUsd / token.marketCap).toFixed(1) : '0'}% of mcap
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-medium">{formatNumber(token.volumeUsd)}</span>
+                          {token.changeVolumeUsd && (
+                            <span className={`text-xs ${token.changeVolumeUsd > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {token.changeVolumeUsd > 0 ? '+' : ''}{token.changeVolumeUsd.toFixed(1)}%
                             </span>
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell className="text-right font-medium">{formatNumber(token.totalHolders)}</TableCell>
-                      <TableCell className="text-right font-medium">
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-medium">{token.totalHolders?.toLocaleString() || '0'}</span>
+                      </TableCell>
+                      <TableCell className="text-right">
                         <Badge variant="outline" className="bg-accent/30 border-accent text-foreground">
                           {formatTimeAgo(token.creationDate)}
                         </Badge>

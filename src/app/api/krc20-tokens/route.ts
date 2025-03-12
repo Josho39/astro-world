@@ -16,7 +16,15 @@ export async function GET() {
         }
 
         const data = await response.json();
-        return NextResponse.json(data, {
+        
+        // Process data - no need to modify the values, they're already in USD
+        const processedData = data.map((token: any) => ({
+            ...token,
+            change24h: token.changePrice || 0,
+            // No conversion needed, all values are already in USD
+        }));
+
+        return NextResponse.json(processedData, {
             status: 200,
             headers: {
                 'Cache-Control': 's-maxage=60, stale-while-revalidate'
