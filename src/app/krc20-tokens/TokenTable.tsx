@@ -432,7 +432,6 @@ const TokenTable = () => {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-sm">{token.ticker}</span>
-                            <span className="text-xs text-muted-foreground">#{token.rank}</span>
                           </div>
                         </div>
                       </TableCell>
