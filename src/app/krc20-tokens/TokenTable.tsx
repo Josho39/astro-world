@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
+import { Label } from "@/components/ui/label";
 
 interface TokenData {
   _id: string;
@@ -40,6 +41,8 @@ const TokenTable = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'top' | 'new'>('top');
+  const [currency, setCurrency] = useState<'USD' | 'KAS'>('USD');
+  const [kasToUsdRate, setKasToUsdRate] = useState<number>(0.066929);
 
   useEffect(() => {
     const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
@@ -54,6 +57,18 @@ const TokenTable = () => {
       setFavorites(new Set(JSON.parse(savedFavorites)));
     }
   }, []);
+
+  const fetchKasPrice = async () => {
+    try {
+      const response = await fetch('https://api.kaspa.org/info/price?stringOnly=false');
+      if (!response.ok) throw new Error('Failed to fetch KAS price');
+      const data = await response.json();
+      setKasToUsdRate(data.price);
+    } catch (error) {
+      console.error('Failed to fetch KAS price:', error);
+      // Keep using the default value if fetch fails
+    }
+  };
 
   const fetchTokens = async () => {
     try {
@@ -78,11 +93,12 @@ const TokenTable = () => {
 
   useEffect(() => {
     fetchTokens();
+    fetchKasPrice();
   }, []);
 
   const refreshData = async () => {
     setIsRefreshing(true);
-    await fetchTokens();
+    await Promise.all([fetchTokens(), fetchKasPrice()]);
   };
 
   const formatTimeAgo = (timestamp: number) => {
@@ -96,12 +112,36 @@ const TokenTable = () => {
     return `${Math.floor(days / 365)}y`;
   };
 
-  const formatNumber = (num: number | undefined) => {
+  const formatNumber = (num: number | undefined, isPrice = false) => {
     if (typeof num !== 'number') return "0";
-    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-    return num.toFixed(0);
+    
+    if (currency === 'USD') {
+      // Convert to USD
+      const usdValue = num * kasToUsdRate;
+      
+      if (isPrice) {
+        if (usdValue < 0.01) return `$${usdValue.toFixed(6)}`;
+        if (usdValue < 1) return `$${usdValue.toFixed(4)}`;
+        return `$${usdValue.toFixed(2)}`;
+      }
+      
+      if (usdValue >= 1e9) return `$${(usdValue / 1e9).toFixed(1)}B`;
+      if (usdValue >= 1e6) return `$${(usdValue / 1e6).toFixed(1)}M`;
+      if (usdValue >= 1e3) return `$${(usdValue / 1e3).toFixed(1)}K`;
+      return `$${usdValue.toFixed(2)}`;
+    } else {
+      // Original KAS value
+      if (isPrice) {
+        if (num < 0.01) return `${num.toFixed(6)} KAS`;
+        if (num < 1) return `${num.toFixed(4)} KAS`;
+        return `${num.toFixed(2)} KAS`;
+      }
+      
+      if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B KAS`;
+      if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M KAS`;
+      if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K KAS`;
+      return `${num.toFixed(2)} KAS`;
+    }
   };
 
   const toggleFavorite = (tokenId: string) => {
@@ -200,7 +240,21 @@ const TokenTable = () => {
               />
             </div>
             
-            <div className="flex gap-2">              
+            <div className="flex gap-2">
+              <div className="flex items-center gap-2 bg-background/80 px-3 py-1 rounded-md border text-xs">
+                <Label htmlFor="currency-toggle" className="cursor-pointer">
+                  {currency === "USD" ? 
+                    <span className="flex items-center"><DollarSign size={16} className="mr-1" /> USD</span> : 
+                    <span>KAS</span>
+                  }
+                </Label>
+                <Switch 
+                  id="currency-toggle"
+                  checked={currency === "KAS"}
+                  onCheckedChange={(checked) => setCurrency(checked ? "KAS" : "USD")}
+                />
+              </div>
+              
               <div className="flex items-center gap-2 bg-background/80 px-3 py-1 rounded-md border text-xs">
                 <span>Favorites</span>
                 <Switch 
@@ -208,6 +262,11 @@ const TokenTable = () => {
                   onCheckedChange={setShowFavorites} 
                 />
               </div>
+              
+              <Button size="sm" variant="outline" className="text-xs h-8" onClick={refreshData}>
+                <RefreshCw size={14} className={`mr-1 ${isRefreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
             </div>
           </div>
         </div>
@@ -240,7 +299,7 @@ const TokenTable = () => {
                   <TableHead className="w-[160px]">Token</TableHead>
                   <TableHead className="text-right">
                     <Button variant="ghost" onClick={() => sortData('price')} className="font-medium text-xs h-7 px-2">
-                      Price <DollarSign className="h-3 w-3 ml-1 text-muted-foreground" />
+                      Price {currency === "USD" ? <DollarSign className="h-3 w-3 ml-1 text-muted-foreground" /> : null}
                       {renderSortIcon('price')}
                     </Button>
                   </TableHead>
@@ -250,14 +309,12 @@ const TokenTable = () => {
                       {renderSortIcon('change24h')}
                     </Button>
                   </TableHead>
-                  {!isMobile && (
-                    <TableHead className="text-right">
-                      <Button variant="ghost" onClick={() => sortData('marketCap')} className="font-medium text-xs h-7 px-2">
-                        Market Cap
-                        {renderSortIcon('marketCap')}
-                      </Button>
-                    </TableHead>
-                  )}
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => sortData('marketCap')} className="font-medium text-xs h-7 px-2">
+                      Market Cap
+                      {renderSortIcon('marketCap')}
+                    </Button>
+                  </TableHead>
                   {!isMobile && (
                     <TableHead className="text-right">
                       <Button variant="ghost" onClick={() => sortData('volumeUsd')} className="font-medium text-xs h-7 px-2">
@@ -266,14 +323,12 @@ const TokenTable = () => {
                       </Button>
                     </TableHead>
                   )}
-                  {!isMobile && (
-                    <TableHead className="text-right">
-                      <Button variant="ghost" onClick={() => sortData('totalHolders')} className="font-medium text-xs h-7 px-2">
-                        Holders <Users className="h-3 w-3 ml-1 text-muted-foreground" />
-                        {renderSortIcon('totalHolders')}
-                      </Button>
-                    </TableHead>
-                  )}
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => sortData('totalHolders')} className="font-medium text-xs h-7 px-2">
+                      Holders <Users className="h-3 w-3 ml-1 text-muted-foreground" />
+                      {renderSortIcon('totalHolders')}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">
                     <Button variant="ghost" onClick={() => sortData('creationDate')} className="font-medium text-xs h-7 px-2">
                       Age <Clock className="h-3 w-3 ml-1 text-muted-foreground" />
@@ -301,21 +356,17 @@ const TokenTable = () => {
                       <TableCell className="text-right">
                         <div className="h-4 w-14 bg-muted rounded animate-pulse ml-auto"></div>
                       </TableCell>
-                      {!isMobile && (
-                        <TableCell className="text-right">
-                          <div className="h-4 w-20 bg-muted rounded animate-pulse ml-auto"></div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <div className="h-4 w-20 bg-muted rounded animate-pulse ml-auto"></div>
+                      </TableCell>
                       {!isMobile && (
                         <TableCell className="text-right">
                           <div className="h-4 w-16 bg-muted rounded animate-pulse ml-auto"></div>
                         </TableCell>
                       )}
-                      {!isMobile && (
-                        <TableCell className="text-right">
-                          <div className="h-4 w-12 bg-muted rounded animate-pulse ml-auto"></div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <div className="h-4 w-12 bg-muted rounded animate-pulse ml-auto"></div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="h-4 w-10 bg-muted rounded animate-pulse ml-auto"></div>
                       </TableCell>
@@ -323,7 +374,7 @@ const TokenTable = () => {
                   ))
                 ) : sortedTokens.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isMobile ? 5 : 8} className="h-32 text-center">
+                    <TableCell colSpan={isMobile ? 6 : 8} className="h-32 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <Search className="w-8 h-8 mb-2 opacity-20" />
                         {showFavorites ? (
@@ -394,7 +445,7 @@ const TokenTable = () => {
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         <div className="flex flex-col items-end">
-                          <span className="text-sm">${(token.price ?? 0).toFixed(isMobile ? 4 : 6)}</span>
+                          <span className="text-sm">{formatNumber(token.price, true)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -407,27 +458,22 @@ const TokenTable = () => {
                           <span className="font-medium">{token.change24h ? Math.abs(token.change24h).toFixed(1) : '0.0'}%</span>
                         </div>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="font-medium">{formatNumber(token.marketCap)}</span>
+                        </div>
+                      </TableCell>
                       {!isMobile && (
                         <TableCell className="text-right">
                           <div className="flex flex-col items-end">
-                            <span className="font-medium">${formatNumber(token.marketCap)}</span>
-
-                          </div>
-                        </TableCell>
-                      )}
-                      {!isMobile && (
-                        <TableCell className="text-right">
-                          <div className="flex flex-col items-end">
-                            <span className="font-medium">${formatNumber(token.volumeUsd)}</span>
+                            <span className="font-medium">{formatNumber(token.volumeUsd)}</span>
                             <span className="text-xs text-muted-foreground">
                               {token.volumeUsd && token.marketCap ? (100 * token.volumeUsd / token.marketCap).toFixed(1) : '0'}% of mcap
                             </span>
                           </div>
                         </TableCell>
                       )}
-                      {!isMobile && (
-                        <TableCell className="text-right font-medium">{formatNumber(token.totalHolders)}</TableCell>
-                      )}
+                      <TableCell className="text-right font-medium">{formatNumber(token.totalHolders)}</TableCell>
                       <TableCell className="text-right font-medium">
                         <Badge variant="outline" className="bg-accent/30 border-accent text-foreground">
                           {formatTimeAgo(token.creationDate)}
@@ -444,6 +490,11 @@ const TokenTable = () => {
         <div className="py-3 px-4 border-t text-sm text-muted-foreground flex items-center justify-between">
           <div>Showing {sortedTokens.length} tokens</div>
           <div className="flex items-center gap-3">
+            <div className="flex items-center">
+              <DollarSign className="h-4 w-4 mr-1" />
+              <span>1 KAS = ${kasToUsdRate.toFixed(6)} USD</span>
+            </div>
+            <span>•</span>
             <div className="flex items-center">
               <Star className="h-4 w-4 text-yellow-500 mr-1" fill="currentColor" />
               <span>Favorites: {favorites.size}</span>

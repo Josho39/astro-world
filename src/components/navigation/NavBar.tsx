@@ -93,12 +93,14 @@ const NavBar = () => {
     const [isDesktop, setIsDesktop] = useState(false);
     const navRef = useRef(null);
     const [activeCategoryMobile, setActiveCategoryMobile] = useState<string | null>(null);
+    const [showText, setShowText] = useState(false);
 
     useEffect(() => {
-        setIsDesktop(window.innerWidth >= 768);
+        const checkDesktop = () => window.innerWidth >= 768;
+        setIsDesktop(checkDesktop());
 
         const handleResize = () => {
-            const desktop = window.innerWidth >= 768;
+            const desktop = checkDesktop();
             setIsDesktop(desktop);
             if (desktop) {
                 setIsMobileOpen(false);
@@ -137,7 +139,17 @@ const NavBar = () => {
     };
 
     const toggleExpanded = () => {
-        setIsExpanded(!isExpanded);
+        if (isExpanded) {
+            setShowText(false);
+            setTimeout(() => {
+                setIsExpanded(false);
+            }, 50);
+        } else {
+            setIsExpanded(true);
+            setTimeout(() => {
+                setShowText(true);
+            }, 250);
+        }
     };
 
     const MobileNavButton = () => (
@@ -170,13 +182,17 @@ const NavBar = () => {
                 )}
             </AnimatePresence>
 
-            <div className="fixed top-0 left-0 h-full z-50" ref={navRef}>
+            <div className="fixed top-0 left-0 h-full z-40" ref={navRef}>
                 <motion.nav
                     className="hidden md:flex h-full bg-background border-r border-border text-foreground transition-all duration-300 ease-in-out shadow-md"
                     initial={false}
                     animate={{ width: isExpanded ? 240 : 72 }}
-                    onMouseEnter={() => setIsExpanded(true)}
-                    onMouseLeave={() => setIsExpanded(false)}
+                    transition={{ duration: 0.25 }}
+                    onAnimationComplete={() => {
+                        if (isExpanded) {
+                            setShowText(true);
+                        }
+                    }}
                 >
                     <DesktopSidebar
                         isExpanded={isExpanded}
@@ -185,6 +201,7 @@ const NavBar = () => {
                         walletInfo={walletInfo}
                         handleWalletClick={handleWalletClick}
                         toggleMenu={toggleExpanded}
+                        showText={showText}
                     />
                 </motion.nav>
 
@@ -210,6 +227,7 @@ const NavBar = () => {
                     )}
                 </AnimatePresence>
             </div>
+            <div className="hidden md:block" style={{ width: isExpanded ? '240px' : '72px', flexShrink: 0 }} />
         </>
     );
 };
@@ -221,6 +239,7 @@ interface DesktopSidebarProps {
     walletInfo: { balance: number; address: string } | null;
     handleWalletClick: () => void;
     toggleMenu: () => void;
+    showText?: boolean;
 }
 
 const DesktopSidebar = ({
@@ -229,7 +248,8 @@ const DesktopSidebar = ({
     walletConnected,
     walletInfo,
     handleWalletClick,
-    toggleMenu
+    toggleMenu,
+    showText = false
 }: DesktopSidebarProps) => {
     const krc20Items = navItems.filter(item => item.category === 'krc20');
     const krc721Items = navItems.filter(item => item.category === 'krc721');
@@ -237,7 +257,11 @@ const DesktopSidebar = ({
     const mainItems = navItems.filter(item => item.category === 'main');
 
     return (
-        <div className="flex flex-col h-full w-full overflow-hidden">
+        <div
+            className="flex flex-col h-full w-full overflow-y-auto overflow-x-hidden scrollbar-thin"
+            onMouseEnter={() => toggleMenu()}
+            onMouseLeave={() => toggleMenu()}
+        >
             <div className="h-16 px-4 flex items-center justify-center md:justify-start mt-2 mb-2">
                 <div className="flex items-center">
                     <div className="relative w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -248,18 +272,17 @@ const DesktopSidebar = ({
                             className="object-contain p-1.5"
                         />
                     </div>
-                    <AnimatePresence>
-                        {isExpanded && (
+                    <div className="ml-3 w-28 h-9 flex items-center">
+                        {isExpanded && showText && (
                             <motion.span
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="font-bold text-lg whitespace-nowrap ml-3"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="font-bold text-lg whitespace-nowrap"
                             >
                                 Astro World
                             </motion.span>
                         )}
-                    </AnimatePresence>
+                    </div>
                 </div>
             </div>
 
@@ -268,94 +291,89 @@ const DesktopSidebar = ({
             <div className="flex-1 px-2 py-4 space-y-6 overflow-hidden">
                 {mainItems.length > 0 && (
                     <div className="space-y-1">
-                        {mainItems.map((item) => renderNavItem(item, pathname, isExpanded))}
+                        {mainItems.map((item) => renderNavItem(item, pathname, isExpanded, showText))}
                     </div>
                 )}
 
                 {krc20Items.length > 0 && (
                     <div className="space-y-1">
-                        <AnimatePresence>
-                            {isExpanded && (
+                        <div className="px-2 h-5 mt-4 mb-2 flex items-center">
+                            {isExpanded && showText && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
                                 >
                                     KRC-20
                                 </motion.div>
                             )}
-                        </AnimatePresence>
-                        {krc20Items.map((item) => renderNavItem(item, pathname, isExpanded))}
+                        </div>
+                        {krc20Items.map((item) => renderNavItem(item, pathname, isExpanded, showText))}
                     </div>
                 )}
 
                 {krc721Items.length > 0 && (
                     <div className="space-y-1">
-                        <AnimatePresence>
-                            {isExpanded && (
+                        <div className="px-2 h-5 mt-4 mb-2 flex items-center">
+                            {isExpanded && showText && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
                                 >
                                     KRC-721
                                 </motion.div>
                             )}
-                        </AnimatePresence>
-                        {krc721Items.map((item) => renderNavItem(item, pathname, isExpanded))}
+                        </div>
+                        {krc721Items.map((item) => renderNavItem(item, pathname, isExpanded, showText))}
                     </div>
                 )}
 
                 {utilityItems.length > 0 && (
                     <div className="space-y-1">
-                        <AnimatePresence>
-                            {isExpanded && (
+                        <div className="px-2 h-5 mt-4 mb-2 flex items-center">
+                            {isExpanded && showText && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
                                 >
                                     Utility
                                 </motion.div>
                             )}
-                        </AnimatePresence>
-                        {utilityItems.map((item) => renderNavItem(item, pathname, isExpanded))}
+                        </div>
+                        {utilityItems.map((item) => renderNavItem(item, pathname, isExpanded, showText))}
                     </div>
                 )}
             </div>
 
-            <div className="px-2 py-4 border-t border-border">
-                <div className="h-[68px]">
+            <div className="px-2 py-4 border-t border-border mt-auto">
+                <div className="h-auto min-h-[68px]">
                     <button
                         onClick={handleWalletClick}
                         className="flex items-center w-full h-10 px-2 rounded-lg transition-all duration-200 hover:bg-accent group/wallet"
                     >
                         <div className="flex items-center w-full">
-                            <div className="shrink-0">
+                            <div className="shrink-0 flex items-center justify-center w-6 h-6">
                                 <Power className={`w-5 h-5 ${walletConnected ? 'text-green-500' : 'text-muted-foreground'}`} />
                             </div>
-                            <AnimatePresence>
-                                {isExpanded && (
+                            <div className="ml-3 w-28 h-6 flex items-center">
+                                {isExpanded && showText && (
                                     <motion.span
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -10 }}
-                                        className="ml-3 whitespace-nowrap"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="whitespace-nowrap"
                                     >
                                         {walletConnected ? 'Connected' : 'Connect Wallet'}
                                     </motion.span>
                                 )}
-                            </AnimatePresence>
+                            </div>
                         </div>
                     </button>
-                    {walletConnected && walletInfo && isExpanded && (
+                    {walletConnected && walletInfo && isExpanded && showText && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
                             className="px-2 mt-1 text-sm"
                         >
                             <div className="text-green-500 font-medium">{walletInfo.balance} KAS</div>
@@ -410,9 +428,9 @@ const MobileSidebar = ({
                     </div>
                     <span className="font-bold text-lg whitespace-nowrap ml-3">Astro World</span>
                 </div>
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={closeMobileMenu}
                     className="h-8 w-8 rounded-full"
                 >
@@ -454,7 +472,7 @@ const MobileSidebar = ({
                             <span className="font-medium">{category.name}</span>
                             <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${activeCategory === category.id ? 'rotate-90' : ''}`} />
                         </button>
-                        
+
                         <AnimatePresence>
                             {activeCategory === category.id && (
                                 <motion.div
@@ -495,8 +513,8 @@ const MobileSidebar = ({
                         if (!walletConnected) closeMobileMenu();
                     }}
                     className={`flex items-center w-full px-3 py-2.5 rounded-lg transition-all duration-200 
-                        ${walletConnected 
-                            ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' 
+                        ${walletConnected
+                            ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
                             : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
                 >
                     <div className="flex items-center">
@@ -519,14 +537,14 @@ const MobileSidebar = ({
     );
 };
 
-const renderNavItem = (item: { name: any; icon: any; href: any; category?: string; }, pathname: string, isExpanded: boolean) => {
+const renderNavItem = (item: { name: any; icon: any; href: any; category?: string; }, pathname: string, isExpanded: boolean, showText: boolean) => {
     const isActive = pathname === item.href;
-    
+
     return (
         <Link
             key={item.name}
             href={item.href}
-            className={`flex items-center px-2.5 py-2 rounded-lg transition-all duration-200
+            className={`flex items-center h-10 px-2.5 py-0 rounded-lg transition-all duration-200
                 ${isActive
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'text-foreground hover:bg-accent hover:text-accent-foreground'
@@ -536,21 +554,20 @@ const renderNavItem = (item: { name: any; icon: any; href: any; category?: strin
         >
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center">
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center justify-center w-6 h-6">
                         {item.icon}
                     </div>
-                    <AnimatePresence>
-                        {isExpanded && (
+                    <div className="ml-3 w-28 h-6 flex items-center">
+                        {isExpanded && showText && (
                             <motion.span
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="ml-3 whitespace-nowrap"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="whitespace-nowrap text-sm truncate max-w-[160px]"
                             >
                                 {item.name}
                             </motion.span>
                         )}
-                    </AnimatePresence>
+                    </div>
                 </div>
                 <AnimatePresence>
                     {isExpanded && isActive && (
@@ -565,7 +582,7 @@ const renderNavItem = (item: { name: any; icon: any; href: any; category?: strin
                 </AnimatePresence>
             </div>
             {!isExpanded && isActive && (
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full" />
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1.5 h-8 bg-primary rounded-l-full" />
             )}
         </Link>
     );
