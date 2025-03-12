@@ -130,15 +130,15 @@ const TokenTable = () => {
       const kasValue = num / kasToUsdRate;
       
       if (isPrice) {
-        if (kasValue < 0.01) return `${kasValue.toFixed(6)} KAS`;
-        if (kasValue < 1) return `${kasValue.toFixed(4)} KAS`;
-        return `${kasValue.toFixed(2)} KAS`;
+        if (kasValue < 0.01) return `${kasValue.toFixed(6)}`;
+        if (kasValue < 1) return `${kasValue.toFixed(4)}`;
+        return `${kasValue.toFixed(2)}`;
       }
       
-      if (kasValue >= 1e9) return `${(kasValue / 1e9).toFixed(1)}B KAS`;
-      if (kasValue >= 1e6) return `${(kasValue / 1e6).toFixed(1)}M KAS`;
-      if (kasValue >= 1e3) return `${(kasValue / 1e3).toFixed(1)}K KAS`;
-      return `${kasValue.toFixed(2)} KAS`;
+      if (kasValue >= 1e9) return `${(kasValue / 1e9).toFixed(1)}B`;
+      if (kasValue >= 1e6) return `${(kasValue / 1e6).toFixed(1)}M`;
+      if (kasValue >= 1e3) return `${(kasValue / 1e3).toFixed(1)}K`;
+      return `${kasValue.toFixed(2)}`;
     }
   };
 
